@@ -72,12 +72,25 @@ export default function ContactPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!formData.name.trim() || !formData.email.trim() || !formData.subject || !formData.message.trim()) {
+      setSubmitError('Please fill in all required fields (*).');
+      return;
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email.trim())) {
+      setSubmitError('Please enter a valid email address (make sure there are no spaces).');
+      return;
+    }
+
     setIsSubmitting(true);
     setSubmitError('');
 
     try {
       await apiService.post('/contact-messages', {
         ...formData,
+        email: formData.email.trim(),
         subject: formData.subject || 'Website Contact',
       });
       setIsSubmitting(false);
@@ -87,7 +100,7 @@ export default function ContactPage() {
     } catch (error) {
       console.error(error);
       setIsSubmitting(false);
-      setSubmitError('We could not send your message right now. Please try again in a moment.');
+      setSubmitError('We could not send your message right now. Please check your internet or try again.');
     }
   };
 
@@ -197,7 +210,6 @@ export default function ContactPage() {
                             onChange={handleChange}
                             className="form-control custom-contact-input"
                             placeholder="e.g. Muhammad Sohaib"
-                            required
                           />
                         </div>
                         <div className="col-md-6 mb-3">
@@ -205,13 +217,13 @@ export default function ContactPage() {
                             Email Address <span className="text-danger">*</span>
                           </label>
                           <input
-                            type="email"
+                            type="text"
+                            inputMode="email"
                             name="email"
                             value={formData.email}
                             onChange={handleChange}
                             className="form-control custom-contact-input"
                             placeholder="e.g. sohaib@company.com"
-                            required
                           />
                         </div>
                       </div>
@@ -238,7 +250,6 @@ export default function ContactPage() {
                             value={formData.subject}
                             onChange={handleChange}
                             className="form-control custom-contact-input"
-                            required
                           >
                             <option value="" disabled>Select inquiry type...</option>
                             <optgroup label="Software & Digital Solutions">
@@ -277,7 +288,6 @@ export default function ContactPage() {
                           maxLength={500}
                           className="form-control custom-contact-input"
                           placeholder="Tell us about your project timeline, goals, or the specific course you wish to join..."
-                          required
                         ></textarea>
                       </div>
 
