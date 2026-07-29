@@ -22,6 +22,18 @@ export function ContactWidget() {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    
+    if (!formData.name.trim() || !formData.email.trim() || !formData.message.trim()) {
+      setStatusError('Please fill in all required fields (*).');
+      return;
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email.trim())) {
+      setStatusError('Please enter a valid email address (make sure there are no spaces).');
+      return;
+    }
+
     setIsSubmitting(true);
     setStatusError('');
     setStatusMessage('');
@@ -29,14 +41,15 @@ export function ContactWidget() {
     try {
       await apiService.post('/contact-messages', {
         ...formData,
+        email: formData.email.trim(),
         subject: formData.subject || 'Homepage Contact',
       });
 
       setStatusMessage('Thanks. Your message has been sent successfully.');
       setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      setStatusError('Unable to send your message right now. Please try again later.');
+      setStatusError(`Unable to send your message right now. Error: ${error?.message || 'Network issue'}. Please try again later.`);
     } finally {
       setIsSubmitting(false);
     }
@@ -71,15 +84,15 @@ export function ContactWidget() {
               <div className="transparent-circle-1"></div>
               <div className="transparent-circle-2"></div>
               <form id="contact-form" onSubmit={handleSubmit}>
-                <input type="text" name="name" id="name" placeholder="Your Name *" autoComplete="name" className="custom-contact-input" value={formData.name} onChange={handleChange} required />
+                <input type="text" name="name" id="name" placeholder="Your Name *" autoComplete="name" className="custom-contact-input" value={formData.name} onChange={handleChange} />
                 
-                <input type="email" name="email" id="email" pattern="[^ @]*@[^ @]*" placeholder="Your E-mail *" className="custom-contact-input" value={formData.email} onChange={handleChange} required />
+                <input type="text" inputMode="email" name="email" id="email" placeholder="Your E-mail *" className="custom-contact-input" value={formData.email} onChange={handleChange} />
                 
                 <input type="tel" name="phone" id="phone" placeholder="Phone / WhatsApp" className="custom-contact-input" value={formData.phone} onChange={handleChange} />
                 
                 <input type="text" name="subject" id="subject" placeholder="Subject / Interest" className="custom-contact-input" value={formData.subject} onChange={handleChange} />
                 
-                <textarea name="message" id="message" rows={4} placeholder="Your Message *" className="custom-contact-input" value={formData.message} onChange={handleChange} required></textarea>
+                <textarea name="message" id="message" rows={4} placeholder="Your Message *" className="custom-contact-input" value={formData.message} onChange={handleChange}></textarea>
                 
                 <div className="text-end">
                   <button type="submit" id="form-submit" className="btn-premium-gradient w-100">

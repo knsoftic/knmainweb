@@ -97,10 +97,10 @@ export default function ContactPage() {
       setIsSubmitted(true);
       const randomId = Math.floor(1000 + Math.random() * 9000);
       setReferenceCode(`INQ-2026-${randomId}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       setIsSubmitting(false);
-      setSubmitError('We could not send your message right now. Please check your internet or try again.');
+      setSubmitError(`We could not send your message right now. Error: ${error?.message || 'Network issue'}. Please try again.`);
     }
   };
 
