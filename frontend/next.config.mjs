@@ -1,6 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
   outputFileTracingRoot: process.cwd(),
   images: {
     remotePatterns: [
@@ -15,10 +14,6 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: '**.knsoftic.com',
-      },
-      {
-        protocol: 'http',
-        hostname: '127.0.0.1',
       },
     ],
   },

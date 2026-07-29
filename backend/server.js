@@ -1,5 +1,5 @@
 const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '../.env'), override: true });
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
@@ -8,6 +8,11 @@ const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const authMiddleware = require('./middleware/authMiddleware');
 const app = express();
+
+// Health check endpoint for Hostinger deployment
+app.get('/', (req, res) => {
+  res.status(200).send('API is running successfully.');
+});
 
 const corsOrigin = process.env.CORS_ORIGIN;
 if (!corsOrigin) {
