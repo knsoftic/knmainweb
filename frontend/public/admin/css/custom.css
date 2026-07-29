@@ -1,0 +1,33 @@
+/* Add spacing between pagination elements */
+.dataTables_paginate .paginate_button {
+    margin: 0 5px !important;
+    padding: 5px 10px !important;
+    cursor: pointer;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #fff;
+}
+
+/* Hover effect */
+.dataTables_paginate .paginate_button:hover {
+    background-color: #f0f0f0;
+    color: #333 !important;
+}
+
+/* Current active page styling */
+.dataTables_paginate .paginate_button.current {
+    background-color: #6f42c1 !important; /* Matches your purple theme */
+    color: white !important;
+    border-color: #6f42c1;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.table-responsive::-webkit-scrollbar {
+    display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.table-responsive {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
