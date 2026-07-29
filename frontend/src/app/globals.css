@@ -556,7 +556,7 @@ textarea {
 @media (max-width: 991px) {
   /* Navbar & Header */
   .header-area { padding: 10px 0; }
-  .header-area .main-nav .logo img { max-height: 80px !important; }
+  .header-area .main-nav .logo img { max-height: 50px !important; }
   .header-area .main-nav .logo h1 { font-size: 1.2rem !important; }
   .header-area .main-nav .nav {
     background: #fff;
@@ -619,7 +619,7 @@ textarea {
 /* --- SMALL MOBILE PHONES (max-width: 480px) --- */
 @media (max-width: 480px) {
   /* Header adjustments for very small screens */
-  .header-area .main-nav .logo img { max-height: 60px !important; }
+  .header-area .main-nav .logo img { max-height: 40px !important; }
   .section-heading h2 { font-size: 1.6rem !important; }
   .premium-hero-section .hero-title { font-size: 1.8rem !important; }
 }
