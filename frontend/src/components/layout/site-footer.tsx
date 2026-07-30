@@ -25,7 +25,7 @@ export function SiteFooter({ settings }: { settings?: any }) {
                   src={resolveImageUrl(settings?.light_logo_url || settings?.logo_url)}
                   alt={companyName}
                   className="footer-logo-img"
-                  style={{ height: '50px', width: 'auto', maxWidth: '250px', objectFit: 'contain' }}
+                  style={{ width: '220px', height: 'auto', objectFit: 'contain' }}
                 />
               ) : (
                 <h3 style={{ margin: 0, fontWeight: '700', fontSize: '1.5rem', color: '#fff', fontFamily: "'Conthrax', 'Inter', sans-serif", textTransform: 'uppercase' }}>{companyName}</h3>

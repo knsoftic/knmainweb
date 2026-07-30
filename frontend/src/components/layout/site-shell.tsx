@@ -78,7 +78,7 @@ export function SiteShell({ children }: SiteShellProps) {
                       <img
                         src={resolveImageUrl(settings?.light_logo_url || settings?.logo_url)}
                         alt={settings?.site_name || 'KN Softic'}
-                        style={{ maxHeight: '60px', width: 'auto', objectFit: 'contain' }}
+                        style={{ height: '80px', width: 'auto', objectFit: 'contain', transition: 'all 0.3s ease' }}
                       />
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.05 }}>
