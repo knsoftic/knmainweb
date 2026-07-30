@@ -19,16 +19,17 @@ export function SiteFooter({ settings }: { settings?: any }) {
           
           {/* Column 1: Brand Info */}
           <div className="col-lg-4 col-md-6 col-12 footer-widget">
-            <div className="footer-logo-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
-              {(settings?.light_logo_url || settings?.logo_url) && (
+            <div className="footer-logo-wrapper" style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
+              {(settings?.light_logo_url || settings?.logo_url) ? (
                 <img
                   src={resolveImageUrl(settings?.light_logo_url || settings?.logo_url)}
                   alt={companyName}
                   className="footer-logo-img"
-                  style={{ width: '40px', height: '40px', objectFit: 'contain' }}
+                  style={{ height: '50px', width: 'auto', maxWidth: '250px', objectFit: 'contain' }}
                 />
+              ) : (
+                <h3 style={{ margin: 0, fontWeight: '700', fontSize: '1.5rem', color: '#fff', fontFamily: "'Conthrax', 'Inter', sans-serif", textTransform: 'uppercase' }}>{companyName}</h3>
               )}
-              <h3 style={{ margin: 0, fontWeight: '700', fontSize: '1.5rem', color: '#fff', fontFamily: "'Conthrax', 'Inter', sans-serif", textTransform: 'uppercase' }}>{companyName}</h3>
             </div>
             <p className="footer-desc">
               {tagline}. We bring your digital visions to life through cutting-edge development and striking visual identity.
