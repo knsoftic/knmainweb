@@ -212,12 +212,18 @@ node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 
 ```ini
 NEXT_PUBLIC_API_URL=https://api.knsoftic.com/api
-API_INTERNAL_URL=http://127.0.0.1:5000/api
+API_INTERNAL_URL=https://api.knsoftic.com/api
 NEXT_PUBLIC_SITE_URL=https://knsoftic.com
-NEXT_PUBLIC_ADMIN_EMAIL=admin@knsoftic.com
 ```
 
-The browser uses the public HTTPS address; the server uses `127.0.0.1` internally, which is faster.
+Those three are all the site reads — `backend/.env.example` and `frontend/.env.production.example`
+in the project list every value with an explanation.
+
+`NEXT_PUBLIC_API_URL` is used by the visitor's browser and must be the public HTTPS address.
+`API_INTERNAL_URL` is used by the server while rendering pages; the public address always works.
+Pointing it at `http://127.0.0.1:<port>/api` is faster, but only if the API really listens on that
+port on the same machine — check with `curl` over SSH before using it, because a wrong value makes
+pages render without their content.
 
 After changing either file: rebuild the website (`npm run build` in `frontend`) and restart the app.
 The `.env.production` values are baked into the build, so a restart alone is not enough.
