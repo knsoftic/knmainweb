@@ -429,7 +429,11 @@
 }
 .ks-logo { display: inline-flex; align-items: center; flex-shrink: 0; text-decoration: none !important; transition: transform 0.4s var(--ks-ease); }
 .ks-logo:hover { transform: scale(1.03); }
-.ks-logo img { height: 56px; width: auto; object-fit: contain; transition: height 0.35s var(--ks-ease); }
+/* The width is only known once the file arrives, so without a ratio the header re-flows the
+   moment the logo loads - one of the larger layout shifts on the site. Stating the shape of
+   the logo lets the browser reserve the right width up front. Update this if the logo in
+   Admin → Settings is replaced with one of a noticeably different shape. */
+.ks-logo img { height: 56px; width: auto; aspect-ratio: 1600 / 584; object-fit: contain; transition: height 0.35s var(--ks-ease); }
 .ks-header.is-scrolled .ks-logo img { height: 46px; }
 .ks-logo__text { display: flex; flex-direction: column; line-height: 1.05; color: #fff; }
 .ks-logo__name { font-family: var(--ks-font-display); font-size: 1.4rem; font-weight: 700; white-space: nowrap; }
@@ -541,14 +545,25 @@
 .ks-blob--1 { width: 540px; height: 540px; right: -140px; top: -200px; background: rgba(184, 74, 245, 0.55); animation: ks-drift-1 18s ease-in-out infinite alternate; }
 .ks-blob--2 { width: 480px; height: 480px; left: -180px; bottom: -220px; background: rgba(57, 48, 199, 0.75); animation: ks-drift-2 22s ease-in-out infinite alternate; }
 .ks-blob--3 { width: 360px; height: 360px; left: 36%; top: 26%; background: rgba(141, 24, 208, 0.45); animation: ks-drift-3 26s ease-in-out infinite alternate; }
+/* The dot grid drifts for ever. Animating background-position did that by repainting the whole
+   hero on every frame - work the compositor cannot take over. The mask stays on this element so
+   the soft edge holds still, while an oversized layer inside carries the dots and is simply
+   moved. The overhang is wider than the distance travelled, so no edge is ever exposed. */
 .ks-hero__grid {
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.18) 1px, transparent 1px);
-  background-size: 28px 28px;
+  overflow: hidden;
   -webkit-mask-image: radial-gradient(ellipse 60% 70% at 72% 42%, #000 15%, transparent 75%);
   mask-image: radial-gradient(ellipse 60% 70% at 72% 42%, #000 15%, transparent 75%);
+}
+.ks-hero__grid::before {
+  content: '';
+  position: absolute;
+  inset: -300px;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.18) 1px, transparent 1px);
+  background-size: 28px 28px;
   animation: ks-dots-pan 40s linear infinite;
+  will-change: transform;
 }
 /* Fine grain (greyscale) that keeps large gradients from looking flat. */
 .ks-grain {
@@ -1595,7 +1610,7 @@ select.ks-input { appearance: auto; }
   padding: 56px 0;
 }
 .ks-footer__logo { display: inline-block; }
-.ks-footer__logo img { display: block; width: 200px; height: auto; object-fit: contain; }
+.ks-footer__logo img { display: block; width: 200px; height: auto; aspect-ratio: 1600 / 584; object-fit: contain; }
 .ks-footer__logo-text { font-family: var(--ks-font-display); font-size: 1.5rem; font-weight: 700; color: #fff; }
 .ks-footer__desc { margin: 18px 0 24px; font-size: 0.92rem; line-height: 1.75; max-width: 340px; color: rgba(255, 255, 255, 0.65); }
 .ks-footer__heading { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #fff; margin: 6px 0 20px; }
@@ -2037,7 +2052,7 @@ input[type='password']::-ms-clear { display: none; }
 @keyframes ks-drift-1 { from { transform: translate(0, 0); } to { transform: translate(-90px, 70px); } }
 @keyframes ks-drift-2 { from { transform: translate(0, 0); } to { transform: translate(110px, -60px); } }
 @keyframes ks-drift-3 { from { transform: translate(0, 0); } to { transform: translate(-70px, -50px); } }
-@keyframes ks-dots-pan { to { background-position: 280px 140px; } }
+@keyframes ks-dots-pan { to { translate: 280px 140px; } }
 @keyframes ks-type { 0% { transform: scaleX(0); } 18%, 82% { transform: scaleX(1); } 100% { transform: scaleX(0); } }
 @keyframes ks-progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 @keyframes ks-grow-x { to { transform: scaleX(1); } }
@@ -2495,3 +2510,41 @@ html.ks-reveal-ready [data-reveal='stagger']:not([data-revealed]):not([data-reve
 .ks-hero[data-idle]::after {
   animation-play-state: paused !important;
 }
+
+/* ------------------------------------------------------- Contact page social pills */
+
+/* Moved here verbatim from custom.css, which is no longer loaded. Of its 199 rules these five
+   were the only ones that matched anything anywhere on the site - the rest styled the previous
+   design - so the whole stylesheet was blocking the first paint of every page for this one
+   component. TikTok and GitHub are added since those links exist now. */
+.contact-social-pill {
+  background: #ffffff;
+  border: 1px solid rgba(122, 106, 216, 0.15);
+  border-radius: 14px;
+  padding: 10px 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #1e293b;
+  font-weight: 600;
+  font-size: 0.88rem;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  text-decoration: none;
+}
+.contact-social-pill:hover {
+  transform: translateY(-3px);
+  background: linear-gradient(135deg, #7a6ad8, #4f46e5);
+  color: #ffffff !important;
+  border-color: transparent;
+  box-shadow: 0 10px 20px rgba(122, 106, 216, 0.3);
+}
+.contact-social-pill:hover i { color: #ffffff !important; }
+
+.contact-social-pill-facebook i { color: #1877f2 !important; }
+.contact-social-pill-twitter i { color: #000000 !important; }
+.contact-social-pill-linkedin i { color: #0a66c2 !important; }
+.contact-social-pill-instagram i { color: #e1306c !important; }
+.contact-social-pill-youtube i { color: #ff0000 !important; }
+.contact-social-pill-tiktok i { color: #010101 !important; }
+.contact-social-pill-github i { color: #181717 !important; }

@@ -82,7 +82,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="stylesheet" href="https://fonts.cdnfonts.com/css/conthrax" />
         <link rel="stylesheet" href="/assets/css/fontawesome.css" />
         <link rel="stylesheet" href="/assets/css/templatemo-scholar.css" />
-        <link rel="stylesheet" href="/assets/css/custom.css" />
         {/* The few admin-theme base rules the public pages rely on; the full admin theme loads in app/admin/layout.tsx. */}
         <link rel="stylesheet" href="/assets/css/site-base.css" />
         {/* Public-site layout and components (ks-* classes); loads last so it wins over the template CSS. */}
