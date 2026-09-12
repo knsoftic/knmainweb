@@ -59,16 +59,55 @@ export function MotionEffects() {
       });
     }
 
+    // The hero animates continuously - rings, drifting blobs, a glow, floating cards. None of that
+    // is worth a frame's work once it has scrolled out of sight, and stopping it leaves more room
+    // for the scrolling itself. Animations resume from where they paused.
+    if ('IntersectionObserver' in window) {
+      const hero = document.querySelector<HTMLElement>('.ks-hero');
+      if (hero) {
+        const idleObserver = new IntersectionObserver(
+          ([entry]) => {
+            if (entry.isIntersecting) hero.removeAttribute('data-idle');
+            else hero.setAttribute('data-idle', '');
+          },
+          { rootMargin: '120px' }
+        );
+        idleObserver.observe(hero);
+        cleanups.push(() => {
+          idleObserver.disconnect();
+          hero.removeAttribute('data-idle');
+        });
+      }
+    }
+
     if (window.matchMedia('(pointer: fine)').matches) {
+      // A pointer can report well over a hundred moves a second, and each write here repaints that
+      // card's glow. Coalescing to one write per frame keeps the effect and drops the rest.
+      let frame = 0;
+      let pending: { card: HTMLElement; x: number; y: number } | null = null;
+
+      const flush = () => {
+        frame = 0;
+        if (!pending) return;
+        const { card, x, y } = pending;
+        pending = null;
+        const rect = card.getBoundingClientRect();
+        card.style.setProperty('--mx', `${x - rect.left}px`);
+        card.style.setProperty('--my', `${y - rect.top}px`);
+      };
+
       const onPointerMove = (event: PointerEvent) => {
         const card = (event.target as Element | null)?.closest?.<HTMLElement>('.ks-card--hover');
         if (!card) return;
-        const rect = card.getBoundingClientRect();
-        card.style.setProperty('--mx', `${event.clientX - rect.left}px`);
-        card.style.setProperty('--my', `${event.clientY - rect.top}px`);
+        pending = { card, x: event.clientX, y: event.clientY };
+        if (!frame) frame = requestAnimationFrame(flush);
       };
+
       document.addEventListener('pointermove', onPointerMove, { passive: true });
-      cleanups.push(() => document.removeEventListener('pointermove', onPointerMove));
+      cleanups.push(() => {
+        document.removeEventListener('pointermove', onPointerMove);
+        cancelAnimationFrame(frame);
+      });
     }
 
     return () => cleanups.forEach((cleanup) => cleanup());

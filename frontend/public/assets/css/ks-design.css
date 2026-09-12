@@ -276,11 +276,9 @@
 }
 .ks-chip--solid { background: var(--ks-grad); color: #fff; }
 .ks-chip--glass {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.14);
   color: #fff;
   border: 1px solid rgba(255, 255, 255, 0.22);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
 }
 .ks-chip--white { background: #fff; color: var(--ks-purple); box-shadow: var(--ks-shadow-sm); }
 .ks-chip--outline { background: transparent; border: 1px solid var(--ks-line-strong); color: var(--ks-violet-text); }
@@ -444,10 +442,11 @@
   gap: 4px;
   padding: 6px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.1);
+  /* No backdrop-filter here on purpose: once scrolled, the header's own gradient sits directly
+     behind this pill, so blurring it changed almost nothing while costing a re-blur on every
+     frame of every scroll, on every page. A slightly stronger tint looks the same for free. */
+  background: rgba(255, 255, 255, 0.14);
   border: 1px solid rgba(255, 255, 255, 0.16);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
   list-style: none;
   margin: 0;
 }
@@ -555,8 +554,9 @@
 .ks-grain {
   position: absolute;
   inset: 0;
-  opacity: 0.12;
-  mix-blend-mode: overlay;
+  /* Plain transparency rather than mix-blend-mode: blending forces the browser to re-read
+     everything underneath on every frame, and the blobs below never stop moving. */
+  opacity: 0.07;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
@@ -587,11 +587,20 @@
 .ks-hero--plain { padding-bottom: 64px; }
 /* Soft light that follows the mouse (position set by hero-slider.tsx). */
 .ks-hero__spot {
+  /* A fixed circle that is moved, rather than a gradient whose centre is redrawn. Moving a layer
+     is handled by the compositor; redrawing a hero-sized gradient 60 times a second is not. */
   position: absolute;
-  inset: 0;
-  background: radial-gradient(560px circle at var(--mx, 70%) var(--my, 35%), rgba(255, 255, 255, 0.12), transparent 60%);
+  top: 0;
+  left: 0;
+  width: 1120px;
+  height: 1120px;
+  margin: -560px 0 0 -560px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.12), transparent 60%);
+  translate: var(--mx, 50%) var(--my, 50%);
   opacity: 0;
   transition: opacity 0.6s ease;
+  will-change: transform;
 }
 .ks-hero:hover .ks-hero__spot { opacity: 1; }
 
@@ -632,6 +641,7 @@
   justify-content: center;
   transform: rotateX(calc(var(--py) * -8deg)) rotateY(calc(var(--px) * 10deg));
   transition: transform 0.7s var(--ks-ease);
+  will-change: transform;
 }
 .ks-hero__halo {
   position: absolute;
@@ -641,6 +651,7 @@
   background: radial-gradient(circle, rgba(192, 132, 252, 0.6), rgba(141, 24, 208, 0) 70%);
   filter: blur(18px);
   animation: ks-glow 6s ease-in-out infinite;
+  will-change: opacity;
 }
 .ks-hero__ring {
   position: absolute;
@@ -674,6 +685,9 @@
   translate: calc(var(--px) * 24px) calc(var(--py) * 24px);
   transition: translate 0.7s var(--ks-ease);
   animation: ks-float 7s ease-in-out infinite;
+  /* The drop shadow is expensive to draw and this image never stops moving, so it is rasterised
+     once into its own layer and then simply moved. */
+  will-change: transform;
 }
 .ks-hero__float {
   position: absolute;
@@ -704,10 +718,10 @@
   width: 170px;
   padding: 12px 14px 14px;
   border-radius: 14px;
-  background: rgba(26, 6, 58, 0.5);
+  /* Deliberately no backdrop-filter: this card never stops moving, so re-blurring what is behind
+     it would be the most expensive thing in the hero. */
+  background: rgba(26, 6, 58, 0.62);
   border: 1px solid rgba(255, 255, 255, 0.16);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   box-shadow: 0 18px 40px rgba(26, 6, 58, 0.3);
   translate: calc(var(--px) * -28px) calc(var(--py) * -28px);
   transition: translate 0.7s var(--ks-ease);
@@ -2019,10 +2033,10 @@ input[type='password']::-ms-clear { display: none; }
 @keyframes ks-zoom-in { from { opacity: 0; scale: 0.9; } to { opacity: 1; scale: 1; } }
 @keyframes ks-pop-in { from { opacity: 0; scale: 0.6; } 70% { scale: 1.04; } to { opacity: 1; scale: 1; } }
 @keyframes ks-spin { to { rotate: 360deg; } }
-@keyframes ks-glow { 0%, 100% { opacity: 0.75; scale: 0.94; } 50% { opacity: 1; scale: 1.06; } }
-@keyframes ks-drift-1 { from { transform: translate(0, 0) scale(1); } to { transform: translate(-90px, 70px) scale(1.15); } }
-@keyframes ks-drift-2 { from { transform: translate(0, 0) scale(1); } to { transform: translate(110px, -60px) scale(1.1); } }
-@keyframes ks-drift-3 { from { transform: translate(0, 0) scale(0.9); } to { transform: translate(-70px, -50px) scale(1.2); } }
+@keyframes ks-glow { 0%, 100% { opacity: 0.7; } 50% { opacity: 1; } }
+@keyframes ks-drift-1 { from { transform: translate(0, 0); } to { transform: translate(-90px, 70px); } }
+@keyframes ks-drift-2 { from { transform: translate(0, 0); } to { transform: translate(110px, -60px); } }
+@keyframes ks-drift-3 { from { transform: translate(0, 0); } to { transform: translate(-70px, -50px); } }
 @keyframes ks-dots-pan { to { background-position: 280px 140px; } }
 @keyframes ks-type { 0% { transform: scaleX(0); } 18%, 82% { transform: scaleX(1); } 100% { transform: scaleX(0); } }
 @keyframes ks-progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
@@ -2468,4 +2482,16 @@ html.ks-reveal-ready [data-reveal='stagger']:not([data-revealed]):not([data-reve
   /* Beyond this the shell stops growing: wider would start to hurt more than it helps. The hero
      gets a floor so it still fills a very tall, very wide screen. */
   .ks-hero { min-height: 780px; }
+}
+
+/* ------------------------------------------------------------------------ Idle hero */
+
+/* The hero's rings, blobs, glow and floating cards animate forever. Once it has scrolled out of
+   sight that work is invisible but still costs a frame's effort on every frame, which is felt on
+   phones and laptops as the rest of the page scrolling less smoothly. motion-effects.tsx marks the
+   hero idle while it is off screen; everything resumes where it left off when it comes back. */
+.ks-hero[data-idle] *,
+.ks-hero[data-idle]::before,
+.ks-hero[data-idle]::after {
+  animation-play-state: paused !important;
 }
