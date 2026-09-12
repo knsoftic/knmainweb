@@ -143,7 +143,7 @@ export function SiteShell({ children, initialSettings = null, services = [] }: S
               aria-expanded={menuOpen}
               aria-controls="ks-mobile-menu"
             >
-              <i className={menuOpen ? 'bi bi-x-lg' : 'bi bi-list'} aria-hidden="true"></i>
+              <i className={menuOpen ? 'fa fa-xmark' : 'fa fa-bars'} aria-hidden="true"></i>
             </button>
           </div>
         </div>

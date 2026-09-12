@@ -125,7 +125,7 @@ export function ContactPageClient({ pageSeo, courseNames }: ContactPageClientPro
 
   const infoCards = [
     {
-      icon: 'bi bi-geo-alt-fill',
+      icon: 'fa fa-location-dot',
       title: 'Our Headquarters',
       body: (
         <>
@@ -135,12 +135,12 @@ export function ContactPageClient({ pageSeo, courseNames }: ContactPageClientPro
       ),
       foot: (
         <a href={directionsUrl} target="_blank" rel="noopener noreferrer" className="ks-link">
-          Get Directions <i className="bi bi-arrow-up-right" aria-hidden="true"></i>
+          Get Directions <i className="fa fa-arrow-up-right-from-square" aria-hidden="true"></i>
         </a>
       ),
     },
     {
-      icon: 'bi bi-envelope-fill',
+      icon: 'fa fa-envelope',
       title: 'Email Support',
       body: (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -151,7 +151,7 @@ export function ContactPageClient({ pageSeo, courseNames }: ContactPageClientPro
       foot: <span className="ks-meta">We reply within 24 hours</span>,
     },
     {
-      icon: 'bi bi-whatsapp',
+      icon: 'fab fa-whatsapp',
       title: 'Phone & WhatsApp',
       body: (
         <>
@@ -161,12 +161,12 @@ export function ContactPageClient({ pageSeo, courseNames }: ContactPageClientPro
       ),
       foot: (
         <a href={`https://wa.me/${whatsappNumber}`} target="_blank" rel="noopener noreferrer" className="ks-link text-success">
-          Chat on WhatsApp <i className="bi bi-arrow-right" aria-hidden="true"></i>
+          Chat on WhatsApp <i className="fa fa-arrow-right" aria-hidden="true"></i>
         </a>
       ),
     },
     {
-      icon: 'bi bi-clock-fill',
+      icon: 'fa fa-clock',
       title: 'Working Hours',
       body: <p className="ks-card__text" style={{ color: 'var(--ks-ink)', fontWeight: 500 }}>{workingHours}</p>,
       foot: <span className="ks-meta">Pakistan time (PKT)</span>,
@@ -182,7 +182,7 @@ export function ContactPageClient({ pageSeo, courseNames }: ContactPageClientPro
         breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Contact Us', active: true }]}
       >
         <div className="d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill bg-success bg-opacity-10 text-white fw-semibold small" style={{ marginTop: '28px', border: '1px solid rgba(255,255,255,0.2)' }}>
-          <i className="bi bi-clock-fill text-success" aria-hidden="true"></i>
+          <i className="fa fa-clock text-success" aria-hidden="true"></i>
           <span>{workingHours} • Quick replies during working hours</span>
         </div>
       </PageHero>
@@ -203,7 +203,7 @@ export function ContactPageClient({ pageSeo, courseNames }: ContactPageClientPro
                     <h3 className="ks-card__title" style={{ fontSize: '1.4rem', margin: 0 }}>
                       {pageSeo?.h3_heading || 'Send Us A Message'}
                     </h3>
-                    <span className="ks-chip"><i className="bi bi-lightning-charge-fill text-warning" aria-hidden="true"></i> Quick Response</span>
+                    <span className="ks-chip"><i className="fa fa-bolt text-warning" aria-hidden="true"></i> Quick Response</span>
                   </div>
                   <p className="ks-card__text" style={{ marginBottom: '26px' }}>
                     Fill out the form below and our engineering & support team will respond within 24 hours.
@@ -262,7 +262,7 @@ export function ContactPageClient({ pageSeo, courseNames }: ContactPageClientPro
                     </div>
                     <div className="ks-form__full d-flex align-items-center justify-content-between flex-wrap gap-3">
                       <span className="ks-meta d-inline-flex align-items-center gap-2">
-                        <i className="bi bi-shield-check text-success" aria-hidden="true"></i> Your privacy is 100% protected.
+                        <i className="fa fa-shield-alt text-success" aria-hidden="true"></i> Your privacy is 100% protected.
                       </span>
                       <button type="submit" className="ks-btn ks-btn--primary" disabled={isSubmitting}>
                         {isSubmitting ? (
@@ -273,7 +273,7 @@ export function ContactPageClient({ pageSeo, courseNames }: ContactPageClientPro
                         ) : (
                           <>
                             <span>Send Message Now</span>
-                            <i className="bi bi-send-fill" aria-hidden="true"></i>
+                            <i className="fa fa-paper-plane" aria-hidden="true"></i>
                           </>
                         )}
                       </button>
@@ -287,14 +287,14 @@ export function ContactPageClient({ pageSeo, courseNames }: ContactPageClientPro
                     className="d-inline-flex align-items-center justify-content-center bg-success text-white shadow-lg mb-4"
                     style={{ width: '80px', height: '80px', fontSize: '2.2rem', borderRadius: '24px' }}
                   >
-                    <i className="bi bi-check-lg" aria-hidden="true"></i>
+                    <i className="fa fa-check" aria-hidden="true"></i>
                   </div>
                   <h3 className="ks-card__title" style={{ fontSize: '1.5rem' }}>Message Received Successfully!</h3>
                   <p className="ks-card__text mx-auto" style={{ maxWidth: '420px', marginBottom: '28px' }}>
                     Thank you for reaching out, <strong>{formData.name}</strong>. Our senior technical team has logged your request and will contact you via email or WhatsApp within 24 hours.
                   </p>
                   <button type="button" className="ks-btn ks-btn--outline" onClick={handleReset}>
-                    <i className="bi bi-arrow-counterclockwise" aria-hidden="true"></i> Send Another Message
+                    <i className="fa fa-arrow-rotate-left" aria-hidden="true"></i> Send Another Message
                   </button>
                 </div>
               )}
@@ -321,7 +321,7 @@ export function ContactPageClient({ pageSeo, courseNames }: ContactPageClientPro
                     <div className="d-flex flex-wrap gap-2">
                       {socialLinks.map((link) => (
                         <a key={`${link.platform}-${link.url}`} href={link.url} target="_blank" rel="noopener noreferrer" className={`contact-social-pill contact-social-pill-${link.platform?.toLowerCase() || 'unknown'}`}>
-                          <i className={link.icon || 'bi bi-link-45deg'} aria-hidden="true"></i> <span>{link.label || link.platform}</span>
+                          <i className={link.icon || 'fa fa-link'} aria-hidden="true"></i> <span>{link.label || link.platform}</span>
                         </a>
                       ))}
                     </div>
@@ -336,7 +336,7 @@ export function ContactPageClient({ pageSeo, courseNames }: ContactPageClientPro
               eyebrow="Find us"
               title="Visit Our Technology Hub in Faisalabad"
               description="Convenient parking and modern facilities available for clients and students."
-              action={<a href={directionsUrl} target="_blank" rel="noopener noreferrer" className="ks-link">Open in Google Maps <i className="bi bi-arrow-up-right" aria-hidden="true"></i></a>}
+              action={<a href={directionsUrl} target="_blank" rel="noopener noreferrer" className="ks-link">Open in Google Maps <i className="fa fa-arrow-up-right-from-square" aria-hidden="true"></i></a>}
               as="h3"
               compact
             />
@@ -366,10 +366,10 @@ export function ContactPageClient({ pageSeo, courseNames }: ContactPageClientPro
             </div>
             <div className="d-flex flex-wrap gap-3">
               <Link href="/services" className="ks-btn ks-btn--light">
-                Explore All Services <i className="bi bi-arrow-right" aria-hidden="true"></i>
+                Explore All Services <i className="fa fa-arrow-right" aria-hidden="true"></i>
               </Link>
               <a href={`https://wa.me/${whatsappNumber}`} target="_blank" rel="noopener noreferrer" className="ks-btn ks-btn--ghost">
-                <i className="bi bi-whatsapp" aria-hidden="true"></i> Instant WhatsApp Call
+                <i className="fab fa-whatsapp" aria-hidden="true"></i> Instant WhatsApp Call
               </a>
             </div>
           </div>

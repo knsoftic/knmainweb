@@ -319,11 +319,11 @@ export default function ContactMessagesPage() {
                     }
                   }}
                 >
-                  <i className="bi bi-reply-fill"></i> Reply via Email
+                  <i className="fa fa-reply"></i> Reply via Email
                 </a>
               ) : (
                 <span style={{ color: '#6c757d', fontSize: '0.9rem', alignSelf: 'center' }}>
-                  <i className="bi bi-exclamation-triangle" style={{ marginRight: '6px' }}></i>
+                  <i className="fa fa-triangle-exclamation" style={{ marginRight: '6px' }}></i>
                   Invalid email address — cannot reply from here.
                 </span>
               )}

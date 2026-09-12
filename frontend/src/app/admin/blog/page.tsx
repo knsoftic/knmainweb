@@ -69,7 +69,7 @@ export default function BlogDashboard() {
           <div>
             <h4 style={{ margin: 0, color: '#6c757d', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{title}</h4>
             <h2 style={{ margin: '6px 0 0', color: '#1a1d20', fontSize: '2rem', fontWeight: 800, lineHeight: 1 }}>
-              {loading ? <i className="bi bi-arrow-repeat spin" style={{ fontSize: '1.2rem', color: '#adb5bd', display: 'inline-block', animation: 'spin 1s linear infinite' }}></i> : value}
+              {loading ? <i className="fa fa-arrows-rotate spin" style={{ fontSize: '1.2rem', color: '#adb5bd', display: 'inline-block', animation: 'spin 1s linear infinite' }}></i> : value}
             </h2>
           </div>
           <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: bgColor, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', boxShadow: `0 6px 12px ${lightBg}` }}>
@@ -77,7 +77,7 @@ export default function BlogDashboard() {
           </div>
         </div>
         <div style={{ color: '#8D18D0', fontWeight: 600, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '4px', zIndex: 1, marginTop: '4px' }}>
-          Manage <i className="bi bi-arrow-right-short" style={{ fontSize: '1.1rem' }}></i>
+          Manage <i className="fa fa-arrow-right" style={{ fontSize: '1.1rem' }}></i>
         </div>
       </div>
     </Link>
@@ -119,34 +119,34 @@ export default function BlogDashboard() {
             <Link href="/admin/blog/posts/editor" style={{ background: '#fff', color: '#8D18D0', textDecoration: 'none', padding: '10px 20px', borderRadius: '10px', fontWeight: 700, fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
               onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 18px rgba(0,0,0,0.15)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'; }}>
-              <i className="bi bi-pencil-square" style={{ fontSize: '1.1rem' }}></i> Write New Post
+              <i className="fa fa-pen-to-square" style={{ fontSize: '1.1rem' }}></i> Write New Post
             </Link>
           </div>
         </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px', marginBottom: '40px' }}>
-        {statCard('Total Posts', stats.totalPosts, 'bi bi-file-earmark-text-fill', '/admin/blog/posts', 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', 'rgba(79, 172, 254, 0.4)')}
-        {statCard('Published', stats.publishedPosts, 'bi bi-check-circle-fill', '/admin/blog/posts?status=published', 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)', 'rgba(67, 233, 123, 0.4)')}
-        {statCard('Drafts', stats.draftPosts, 'bi bi-journal-medical', '/admin/blog/posts?status=draft', 'linear-gradient(135deg, #f6d365 0%, #fda085 100%)', 'rgba(246, 211, 101, 0.4)')}
-        {statCard('Categories', stats.categories, 'bi bi-tags-fill', '/admin/blog/categories', 'linear-gradient(135deg, #8D18D0 0%, #3930C7 100%)', 'rgba(141, 24, 208, 0.4)')}
-        {statCard('Tags', stats.tags, 'bi bi-hash', '/admin/blog/tags', 'linear-gradient(135deg, #ff0844 0%, #ffb199 100%)', 'rgba(255, 8, 68, 0.4)')}
-        {statCard('Comments', stats.comments, 'bi bi-chat-quote-fill', '/admin/blog/comments', 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', 'rgba(240, 147, 251, 0.4)')}
+        {statCard('Total Posts', stats.totalPosts, 'fa fa-file-lines', '/admin/blog/posts', 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', 'rgba(79, 172, 254, 0.4)')}
+        {statCard('Published', stats.publishedPosts, 'fa fa-circle-check', '/admin/blog/posts?status=published', 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)', 'rgba(67, 233, 123, 0.4)')}
+        {statCard('Drafts', stats.draftPosts, 'fa fa-book-medical', '/admin/blog/posts?status=draft', 'linear-gradient(135deg, #f6d365 0%, #fda085 100%)', 'rgba(246, 211, 101, 0.4)')}
+        {statCard('Categories', stats.categories, 'fa fa-tags', '/admin/blog/categories', 'linear-gradient(135deg, #8D18D0 0%, #3930C7 100%)', 'rgba(141, 24, 208, 0.4)')}
+        {statCard('Tags', stats.tags, 'fa fa-hashtag', '/admin/blog/tags', 'linear-gradient(135deg, #ff0844 0%, #ffb199 100%)', 'rgba(255, 8, 68, 0.4)')}
+        {statCard('Comments', stats.comments, 'fa fa-comments', '/admin/blog/comments', 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', 'rgba(240, 147, 251, 0.4)')}
       </div>
 
       <div style={{ background: '#fff', borderRadius: '24px', padding: '32px', boxShadow: '0 8px 30px rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.02)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <h3 style={{ margin: 0, fontWeight: 800, color: '#1a1d20', fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <i className="bi bi-compass" style={{ color: '#8D18D0' }}></i> Quick Navigation
+            <i className="fa fa-compass" style={{ color: '#8D18D0' }}></i> Quick Navigation
           </h3>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '16px' }}>
           {[
-            { label: 'Manage All Posts', href: '/admin/blog/posts', icon: 'bi bi-files' },
-            { label: 'Manage Categories', href: '/admin/blog/categories', icon: 'bi bi-folder-fill' },
-            { label: 'Manage Tags', href: '/admin/blog/tags', icon: 'bi bi-tags' },
-            { label: 'Manage Comments', href: '/admin/blog/comments', icon: 'bi bi-chat-left-dots-fill' },
-            { label: 'View Public Blog', href: '/blog', icon: 'bi bi-box-arrow-up-right' },
+            { label: 'Manage All Posts', href: '/admin/blog/posts', icon: 'fa fa-copy' },
+            { label: 'Manage Categories', href: '/admin/blog/categories', icon: 'fa fa-folder' },
+            { label: 'Manage Tags', href: '/admin/blog/tags', icon: 'fa fa-tags' },
+            { label: 'Manage Comments', href: '/admin/blog/comments', icon: 'fa fa-comment-dots' },
+            { label: 'View Public Blog', href: '/blog', icon: 'fa fa-arrow-up-right-from-square' },
           ].map((nav, i) => (
             <Link key={i} href={nav.href} style={{ 
               display: 'flex', alignItems: 'center', gap: '14px', padding: '18px 24px', 
@@ -170,7 +170,7 @@ export default function BlogDashboard() {
             }}>
               <i className={nav.icon} style={{ fontSize: '1.4rem', width: '28px', textAlign: 'center', opacity: 0.8 }}></i>
               <span style={{ fontSize: '1rem' }}>{nav.label}</span>
-              <i className="bi bi-chevron-right" style={{ marginLeft: 'auto', fontSize: '0.9rem', opacity: 0.5 }}></i>
+              <i className="fa fa-chevron-right" style={{ marginLeft: 'auto', fontSize: '0.9rem', opacity: 0.5 }}></i>
             </Link>
           ))}
         </div>

@@ -86,7 +86,7 @@ export function ContactWidget() {
               </li>
               <li>
                 <a href={`mailto:${email}`}>
-                  <span className="ks-icon-tile ks-icon-tile--sm" aria-hidden="true"><i className="bi bi-envelope"></i></span>
+                  <span className="ks-icon-tile ks-icon-tile--sm" aria-hidden="true"><i className="fa fa-envelope"></i></span>
                   <span><small>Email us</small>{email}</span>
                 </a>
               </li>
@@ -130,7 +130,7 @@ export function ContactWidget() {
               </div>
               <div className="ks-form__full">
                 <button type="submit" className="ks-btn ks-btn--primary ks-btn--block" disabled={isSubmitting}>
-                  {isSubmitting ? 'Sending Message...' : 'Send Message Now'} <i className="bi bi-send-fill" aria-hidden="true"></i>
+                  {isSubmitting ? 'Sending Message...' : 'Send Message Now'} <i className="fa fa-paper-plane" aria-hidden="true"></i>
                 </button>
               </div>
               {(statusMessage || statusError) && (

@@ -127,15 +127,15 @@ export function SiteFooter({ settings, services = [] }: { settings?: any; servic
             <h3 className="ks-footer__heading">Contact Us</h3>
             <ul className="ks-footer__contact">
               <li>
-                <i className="bi bi-geo-alt" aria-hidden="true"></i>
+                <i className="fa fa-location-dot" aria-hidden="true"></i>
                 <span>{address}</span>
               </li>
               <li>
-                <i className="bi bi-telephone" aria-hidden="true"></i>
+                <i className="fa fa-phone" aria-hidden="true"></i>
                 <a href={`tel:${phone.replace(/[^\d+]/g, '')}`}>{phone}</a>
               </li>
               <li>
-                <i className="bi bi-envelope" aria-hidden="true"></i>
+                <i className="fa fa-envelope" aria-hidden="true"></i>
                 <a href={`mailto:${email}`}>{email}</a>
               </li>
             </ul>

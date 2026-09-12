@@ -71,16 +71,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" data-scroll-behavior="smooth">
       <head>
         {/* Every stylesheet below blocks the first paint, and each extra origin costs a DNS lookup
-            and a TLS handshake before its file even starts downloading. Warming all four here
-            overlaps that setup with the HTML download instead of paying for it one after another. */}
+            and a TLS handshake before its file even starts downloading. Warming the font origins
+            here overlaps that setup with the HTML download instead of paying for it afterwards.
+            Bootstrap and Bootstrap Icons used to load from a third origin as well; their rules now
+            live in site-base.css and their icons come from the Font Awesome already loaded. */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://fonts.cdnfonts.com" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
         <link rel="stylesheet" href="https://fonts.cdnfonts.com/css/conthrax" />
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" />
         <link rel="stylesheet" href="/assets/css/fontawesome.css" />
         <link rel="stylesheet" href="/assets/css/templatemo-scholar.css" />
         <link rel="stylesheet" href="/assets/css/custom.css" />

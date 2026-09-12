@@ -256,7 +256,7 @@ export default function SeoManager() {
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: '20px', padding: '15px', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #dee2e6', marginBottom: '20px' }}>
         <div style={{ width: '45px', height: '45px', borderRadius: '8px', background: 'rgba(141, 24, 208, 0.1)', color: '#8D18D0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
-          <i className="bi bi-layout-text-window-reverse"></i>
+          <i className="fa fa-window-maximize"></i>
         </div>
         <div style={{ display: 'flex', gap: '30px', textAlign: 'center' }}>
           {['H1', 'H2', 'H3', 'H4', 'H5', 'H6'].map((tag, idx) => {
