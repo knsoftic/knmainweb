@@ -1,4 +1,5 @@
 require('dotenv').config();
+const fs = require('fs');
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
@@ -6,7 +7,7 @@ const helmet = require('helmet');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const authMiddleware = require('./middleware/authMiddleware');
-const { UPLOAD_DIR } = require('./config/paths');
+const { UPLOAD_DIR, LEGACY_UPLOAD_DIRS } = require('./config/paths');
 const { hasColumn } = require('./config/schema');
 const { PUBLIC_POST_CONDITION } = require('./controllers/blogController');
 const app = express();
@@ -112,11 +113,16 @@ const blogPublicLimiter = rateLimit({
 
 // Static file serving for uploads. The strict policy stops an uploaded SVG from running script when
 // opened directly; it doesn't affect images embedded with <img>.
-app.use('/uploads', express.static(UPLOAD_DIR, {
+const uploadStaticOptions = {
   setHeaders: (res) => {
     res.setHeader('Content-Security-Policy', "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox");
   },
-}));
+};
+app.use('/uploads', express.static(UPLOAD_DIR, uploadStaticOptions));
+// Images uploaded before the folder moved still live in the old place on some installations.
+for (const dir of LEGACY_UPLOAD_DIRS) {
+  app.use('/uploads', express.static(dir, uploadStaticOptions));
+}
 
 // Auth
 const authRoutes = require('./routes/authRoutes');
@@ -563,4 +569,17 @@ const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+
+  // Printed so a deployment with missing pictures can be diagnosed from the panel's log alone.
+  const describe = (dir) => {
+    try {
+      return `${dir} (${fs.readdirSync(dir).filter((name) => !name.startsWith('.')).length} files)`;
+    } catch (err) {
+      return `${dir} (MISSING - uploaded images will not load)`;
+    }
+  };
+  console.log(`Uploads served from: ${describe(UPLOAD_DIR)}`);
+  for (const dir of LEGACY_UPLOAD_DIRS) {
+    console.log(`Also serving older uploads from: ${describe(dir)}`);
+  }
 });

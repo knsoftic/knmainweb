@@ -114,19 +114,35 @@ const checkDatabase = async () => {
 };
 
 // ------------------------------------------------------------------- Uploads
+const countFiles = (dir) => {
+  try {
+    return fs.readdirSync(dir).filter((name) => !name.startsWith('.')).length;
+  } catch (err) {
+    return -1;
+  }
+};
+
 const checkUploads = () => {
   section('3. Uploaded images');
 
-  const { UPLOAD_DIR } = require('./config/paths');
+  const { UPLOAD_DIR, LEGACY_UPLOAD_DIRS } = require('./config/paths');
+  const legacyTotal = LEGACY_UPLOAD_DIRS.reduce((total, dir) => total + Math.max(0, countFiles(dir)), 0);
+  for (const dir of LEGACY_UPLOAD_DIRS) {
+    const n = countFiles(dir);
+    if (n > 0) ok('older folder also served', `${dir} (${n} files)`);
+  }
+
   if (!fs.existsSync(UPLOAD_DIR)) {
-    bad('folder missing', UPLOAD_DIR);
-    hint('Copy public/uploads across from the old server, or correct UPLOAD_DIR in .env.');
+    if (legacyTotal) warn('main folder missing', `${UPLOAD_DIR} - older images still load, but new uploads will fail`);
+    else bad('folder missing', UPLOAD_DIR);
+    hint('Copy the images across from the old server, or correct UPLOAD_DIR in .env.');
     return;
   }
 
   const files = fs.readdirSync(UPLOAD_DIR).filter((name) => !name.startsWith('.'));
   if (files.length) ok('folder', `${UPLOAD_DIR} (${files.length} files)`);
-  else warn('folder is empty', `${UPLOAD_DIR} - pictures will be missing from the website`);
+  else if (legacyTotal) warn('main folder is empty', `${UPLOAD_DIR} - pictures are coming from the older folder instead`);
+  else bad('no images anywhere', `${UPLOAD_DIR} is empty - every picture on the website will be broken`);
 
   const probe = path.join(UPLOAD_DIR, `.write-test-${Date.now()}`);
   try {
