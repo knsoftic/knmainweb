@@ -1,87 +1,187 @@
-# Deploying KN Softic on aaPanel
+# Deploying KN Softic from GitHub on Hostinger (hPanel)
 
-This guide takes the website from a fresh server to a working site at **knsoftic.com**, with the
-API at **api.knsoftic.com**. Follow it top to bottom the first time; for later updates jump to
-[Updating the site](#12-updating-the-site-after-the-first-deployment).
+The site is already live on Hostinger, put there by uploading files by hand. This guide switches
+that to **deploying from GitHub**: you push your code, Hostinger pulls it, and one command finishes
+the job.
 
-The site is two Node applications plus one database:
+Repository: `https://github.com/knsoftic/knmainweb.git`
 
-| Part | Folder | Runs on | Address |
+---
+
+## What the site is made of
+
+| Part | Folder | Port | Address |
 |---|---|---|---|
-| Website (Next.js) | `frontend` | port 3000 | https://knsoftic.com |
-| API (Express) | `backend` | port 5000 | https://api.knsoftic.com |
-| Database (MySQL / MariaDB) | — | port 3306 | local to the server |
-
-Visitors only ever reach ports 80 and 443. Nginx (built into aaPanel) forwards them to the two
-Node apps, so ports 3000 and 5000 stay closed to the outside world.
+| Website (Next.js) | `frontend` | 3000 | https://knsoftic.com |
+| API (Express) | `backend` | 5000 | https://api.knsoftic.com |
+| Database (MySQL) | — | 3306 | on the server |
 
 ---
 
-## 1. What you need before starting
+## Important: what GitHub deployment does and does not do
 
-- An aaPanel server with **Nginx**, **MySQL 5.7+ or MariaDB 10.4+**, **PM2 Manager** and
-  **Node.js 20.9 or newer** installed (aaPanel → App Store).
-  Node 18 and below will not build this site.
-- Both domains pointing at the server's IP address:
-  - `knsoftic.com` and `www.knsoftic.com`
-  - `api.knsoftic.com`
-- The project files (this repository) and about 2 GB of free disk space.
+Hostinger's Git feature **only copies files**. After every deployment you still have to:
 
-Check the Node version on the server before going further:
+1. install dependencies (`npm ci`),
+2. update the database (`npm run migrate`),
+3. rebuild the website (`npm run build`),
+4. restart both apps.
+
+That is what `deploy.sh` in the project root does, in one command.
+
+**These never come from GitHub and stay on the server** (they are excluded from the repository on
+purpose, so a deployment can never overwrite or delete them):
+
+- `backend/.env` — database password, tokens, allowed addresses
+- `frontend/.env.production` — the API and site addresses
+- `public/uploads/` — every image uploaded through the admin panel
+
+Keep a private copy of both `.env` files somewhere safe.
+
+---
+
+## Part 1 — One-time setup
+
+### Step 1. Decide which branch goes live
+
+Today's work is on the branch `fix/site-audit`. Deploy from `main` so "what's on GitHub's main
+branch" always equals "what's on the website".
+
+On GitHub: open the repository → **Pull requests** → **New pull request** → base `main`, compare
+`fix/site-audit` → create it → **Merge**.
+
+Or from your computer:
 
 ```bash
-node -v     # must print v20.9.0 or higher
+cd "E:/Office Work/kn softic website"
+git checkout main
+git merge fix/site-audit
+git push origin main
 ```
 
----
+### Step 2. Back up what is on the server now
 
-## 2. Upload the project
+Before changing anything, in hPanel → **Files** → **File manager**, download:
 
-Put the project at `/www/wwwroot/knsoftic` so you end up with:
+- `backend/.env`
+- `frontend/.env.production`
+- the whole `public/uploads` folder
 
-```
-/www/wwwroot/knsoftic/
-├── backend/
-├── frontend/
-├── database/
-└── public/uploads/        ← uploaded images live here; never delete this folder
-```
+And in hPanel → **Databases** → **phpMyAdmin** → Export, save a copy of the database.
 
-Either use aaPanel → Files → Upload (a zip, then Unzip), or on the server:
+Do not skip this. It is your way back if anything goes wrong.
+
+### Step 3. Connect the repository in hPanel
+
+hPanel → **Websites** → knsoftic.com → **Dashboard** → **Advanced** → **GIT**.
+
+Fill in:
+
+| Field | Value |
+|---|---|
+| Repository address | `https://github.com/knsoftic/knmainweb.git` |
+| Branch | `main` |
+| Directory | the folder your site already runs from (see note below) |
+
+**About the directory.** Hostinger refuses to install into a folder that already has files, so
+either:
+
+- **Option A (recommended)** — install into a new empty folder, for example `knsoftic-git`. Then
+  copy `backend/.env`, `frontend/.env.production` and `public/uploads` into it from your old
+  folder, and point the Node.js apps at the new folder (Part 3).
+- **Option B** — rename the current folder as a backup (`knsoftic-old`), install into a fresh one,
+  then copy the three items across.
+
+If the repository is private, hPanel shows an **SSH key**. Copy it, then on GitHub go to the
+repository → **Settings** → **Deploy keys** → **Add deploy key**, paste it, and leave write access
+off.
+
+### Step 4. Turn on automatic deployment (optional but handy)
+
+In the same GIT page Hostinger shows a **webhook URL**. On GitHub: repository → **Settings** →
+**Webhooks** → **Add webhook**:
+
+- Payload URL: the webhook address from hPanel
+- Content type: `application/json`
+- Events: *Just the push event*
+
+Now every push to `main` copies the new files to the server automatically. You still run
+`deploy.sh` afterwards to build and restart (Part 2).
+
+### Step 5. Check SSH access
+
+hPanel → **Advanced** → **SSH access**. Note the host, port and username, and connect:
 
 ```bash
-cd /www/wwwroot && git clone <your-repository-url> knsoftic
+ssh -p <port> <username>@<host>
 ```
 
-Do **not** upload `node_modules` or `.next` from your computer; they are rebuilt on the server.
+You need this once per deployment, for the build step. If SSH is not included in your plan, see
+[Building without SSH](#building-without-ssh) at the end.
 
 ---
 
-## 3. Create the database
+## Part 2 — Deploying a change (the normal routine)
 
-aaPanel → **Databases** → **Add database**:
+From now on, releasing an update looks like this:
 
-- Database name: `kn_softic_db`
-- Username: `knsoftic`
-- Password: press the generate button and **save it somewhere safe** — you need it in step 4
-- Access: Local (`localhost`)
-
-Then import the schema. aaPanel → Databases → the database's **Import** button, choose
-`database/final_database.sql`. Or from the command line:
+**1. Push your work**
 
 ```bash
-cd /www/wwwroot/knsoftic
-mysql -u knsoftic -p kn_softic_db < database/final_database.sql
+git add -A
+git commit -m "Describe the change"
+git push origin main
 ```
 
-That file creates every table the site needs. (If you are moving an existing site, import your own
-backup instead — step 5 brings any older database up to date.)
+**2. Pull it onto the server**
+
+Either wait for the webhook (Step 4), or press **Deploy** in hPanel → Advanced → GIT.
+
+**3. Build and restart** — over SSH:
+
+```bash
+cd ~/domains/knsoftic.com/knsoftic     # your project folder
+sh deploy.sh
+```
+
+You will see it install dependencies, run the database migrations, build the website, and restart.
+It takes a few minutes, mostly the build.
+
+**4. Check the site** — https://knsoftic.com, and the admin panel at /admin/login.
 
 ---
 
-## 4. Configure the API
+## Part 3 — Node.js apps and domains
 
-Create `/www/wwwroot/knsoftic/backend/.env` with this content, replacing the two passwords:
+This only needs doing once (or after moving to a new folder).
+
+hPanel → **Advanced** → **Node.js** (or **Setup Node.js App**). You need two applications:
+
+| | Website | API |
+|---|---|---|
+| Application root | `.../knsoftic/frontend` | `.../knsoftic/backend` |
+| Startup file | `node_modules/next/dist/bin/next` with argument `start` | `server.js` |
+| Port | 3000 | 5000 |
+| Node version | 20 or newer | 20 or newer |
+| Domain | knsoftic.com | api.knsoftic.com |
+
+Node **20.9 or newer** is required — the website will not build on Node 18.
+
+If your plan runs Node through PM2 over SSH instead of the panel, use:
+
+```bash
+cd ~/domains/knsoftic.com/knsoftic/backend && pm2 start server.js --name knsoftic-api
+cd ../frontend && pm2 start "npx next start -p 3000" --name knsoftic-web
+pm2 save
+```
+
+`deploy.sh` detects PM2 and restarts both automatically.
+
+---
+
+## Part 4 — Settings files on the server
+
+`backend/.env` (create it if the new folder does not have it):
 
 ```ini
 PORT=5000
@@ -89,75 +189,26 @@ NODE_ENV=production
 
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_USER=knsoftic
-DB_PASSWORD=the-database-password-from-step-3
-DB_NAME=kn_softic_db
+DB_USER=your_database_user
+DB_PASSWORD=your_database_password
+DB_NAME=your_database_name
 
-# Sign-in tokens. Use long random strings — see the command below.
-JWT_SECRET=paste-a-64-character-random-string-here
-JWT_REFRESH_SECRET=paste-a-different-64-character-random-string-here
+JWT_SECRET=a-long-random-string
+JWT_REFRESH_SECRET=a-different-long-random-string
 
-# Which website addresses may call this API. Comma-separated; www is handled automatically.
 CORS_ORIGIN=https://knsoftic.com
-
-# The API sits behind Nginx, so it must trust one proxy hop to see real visitor IPs.
 TRUST_PROXY=1
-
-# Where uploaded images are written. Keep this outside the code folders so updates never touch it.
-UPLOAD_DIR=/www/wwwroot/knsoftic/public/uploads
+UPLOAD_DIR=/home/<user>/domains/knsoftic.com/knsoftic/public/uploads
 ```
 
-Generate the two secrets:
+Keep the **same `JWT_SECRET`** as your current live site — changing it signs everybody out.
+To create new secrets (for a fresh install only):
 
 ```bash
 node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 ```
 
-Run it twice and use a different value for each. Anyone with `JWT_SECRET` can sign in as an
-administrator, so treat it like a password and never commit it.
-
-Lock the file down:
-
-```bash
-chmod 600 /www/wwwroot/knsoftic/backend/.env
-```
-
----
-
-## 5. Install and start the API
-
-```bash
-cd /www/wwwroot/knsoftic/backend
-npm ci --omit=dev
-npm run migrate          # brings the database up to date; safe to re-run
-```
-
-`npm run migrate` is required on a first install and after every update. It adds new columns and
-tables and never deletes data.
-
-Start it with PM2 (aaPanel → PM2 Manager → Add project, or the command line):
-
-```bash
-cd /www/wwwroot/knsoftic/backend
-pm2 start server.js --name knsoftic-api
-pm2 save
-pm2 startup            # run the line it prints, so PM2 restarts after a reboot
-```
-
-Check it:
-
-```bash
-curl http://127.0.0.1:5000/            # -> API is running successfully.
-curl http://127.0.0.1:5000/api/settings  # -> your settings as JSON
-```
-
-If it fails, read the log: `pm2 logs knsoftic-api --lines 50`.
-
----
-
-## 6. Configure and build the website
-
-Create `/www/wwwroot/knsoftic/frontend/.env.production`:
+`frontend/.env.production`:
 
 ```ini
 NEXT_PUBLIC_API_URL=https://api.knsoftic.com/api
@@ -166,224 +217,122 @@ NEXT_PUBLIC_SITE_URL=https://knsoftic.com
 NEXT_PUBLIC_ADMIN_EMAIL=admin@knsoftic.com
 ```
 
-Why two API addresses: `NEXT_PUBLIC_API_URL` is used by the visitor's browser, so it must be the
-public HTTPS address. `API_INTERNAL_URL` is used by the server when it renders pages — going
-straight to `127.0.0.1` skips Nginx and TLS, which makes pages render faster.
+The browser uses the public HTTPS address; the server uses `127.0.0.1` internally, which is faster.
 
-Build it:
-
-```bash
-cd /www/wwwroot/knsoftic/frontend
-npm ci
-npm run build
-```
-
-The build takes a few minutes and needs roughly 1 GB of free memory. If it is killed on a small
-server, add swap space (aaPanel → Toolbox → Swap) and build again.
-
-Start it:
-
-```bash
-pm2 start "npx next start -p 3000" --name knsoftic-web --cwd /www/wwwroot/knsoftic/frontend
-pm2 save
-```
-
-Check it: `curl -I http://127.0.0.1:3000/` should return `HTTP/1.1 200 OK`.
+After changing either file: rebuild the website (`npm run build` in `frontend`) and restart the app.
+The `.env.production` values are baked into the build, so a restart alone is not enough.
 
 ---
 
-## 7. Point the domains at the apps (Nginx)
+## Part 5 — First deployment checklist
 
-### The website — knsoftic.com
+After the first GitHub deployment, check each of these:
 
-aaPanel → **Website** → **Add site**:
-- Domain: `knsoftic.com` and `www.knsoftic.com`
-- PHP version: **Pure static** (this is a Node app; PHP is not used)
-
-Then open the site → **Reverse proxy** → **Add reverse proxy**:
-- Proxy name: `web`
-- Target URL: `http://127.0.0.1:3000`
-- Sending domain: `$host`
-
-### The API — api.knsoftic.com
-
-Add a second site for `api.knsoftic.com` the same way, with a reverse proxy to
-`http://127.0.0.1:5000`.
-
-Then open that site's **Config** file and make sure the proxy block allows large uploads and
-passes the visitor's address through:
-
-```nginx
-client_max_body_size 12M;
-
-location / {
-    proxy_pass http://127.0.0.1:5000;
-    proxy_http_version 1.1;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection "upgrade";
-}
-```
-
-The API accepts images up to 5 MB, so `client_max_body_size 12M` leaves room for the request
-around them. Without it, Nginx rejects uploads over 1 MB with a 413 error before they reach the API.
-The `X-Forwarded-*` headers matter because the API's sign-in protection counts attempts per
-visitor address; without them every visitor looks like the server itself.
-
-Save and reload Nginx (aaPanel → Website → Service → Reload).
+| Check | Expected |
+|---|---|
+| https://knsoftic.com | Homepage with your content and images |
+| Services, Courses, Projects, Blog, Contact | All load |
+| A project card | Opens its own page |
+| Images across the site | Visible (they come from `public/uploads`) |
+| https://api.knsoftic.com/api/settings | Returns JSON |
+| https://knsoftic.com/admin/login | You can sign in |
+| Admin: save any change | Green message, and the site updates within a minute |
+| Admin: upload an image | Appears, and still loads after a refresh |
+| Contact form | Message arrives in Admin → Contact Messages |
+| https://knsoftic.com/sitemap.xml | Lists pages, posts and projects |
 
 ---
 
-## 8. Turn on HTTPS
+## Database updates
 
-For **each** of the two sites: aaPanel → Website → the site → **SSL** → **Let's Encrypt** → select
-the domains → Apply, then switch **Force HTTPS** on.
+`deploy.sh` runs `npm run migrate` for you. It only adds what is missing and never deletes data, so
+it is safe to run repeatedly.
 
-Both must be on HTTPS. If the website is secure but the API is not, browsers block every request
-and the site will look empty.
+For a brand-new database (not your case, but worth knowing): import
+`database/final_database.sql` in phpMyAdmin, then run the migration.
 
----
-
-## 9. The uploads folder
-
-Images added through the admin panel are written to the folder named by `UPLOAD_DIR` and served by
-the API at `https://api.knsoftic.com/uploads/...`.
+To add an administrator:
 
 ```bash
-mkdir -p /www/wwwroot/knsoftic/public/uploads
-chown -R www:www /www/wwwroot/knsoftic/public/uploads
-chmod 755 /www/wwwroot/knsoftic/public/uploads
-```
-
-Keep this folder out of any deployment that wipes the directory, and include it in your backups —
-the images are not stored in the database.
-
----
-
-## 10. Create your administrator account
-
-```bash
-cd /www/wwwroot/knsoftic/backend
-ADMIN_EMAIL=you@knsoftic.com ADMIN_NAME="Your Name" ADMIN_PASSWORD='a-long-password-you-choose' npm run create-admin
-```
-
-Use at least 8 characters; a few unrelated words is both stronger and easier to remember. Running
-it again for the same email resets that password and signs out the other sessions.
-
-Then clear the command from the server's history:
-
-```bash
+cd ~/domains/knsoftic.com/knsoftic/backend
+ADMIN_EMAIL=you@knsoftic.com ADMIN_NAME="Your Name" ADMIN_PASSWORD='your-password' npm run create-admin
 history -c
 ```
 
 ---
 
-## 11. Check everything works
+## Going back to a previous version
 
-| Check | Expected |
-|---|---|
-| https://knsoftic.com | Homepage with your content and images |
-| Services, Courses, Projects, Blog, Contact | All load, images visible |
-| A project card | Opens its own page |
-| https://knsoftic.com/sitemap.xml | Lists your pages, posts and projects |
-| https://knsoftic.com/robots.txt | Contains `Disallow: /admin/` |
-| https://api.knsoftic.com/api/settings | Returns JSON |
-| https://knsoftic.com/admin/login | Sign in with the account from step 10 |
-| In the admin: edit something and save | Toast appears; the change shows on the site within a minute |
-| In the admin: upload an image | Appears immediately, and still loads after a refresh |
-| Contact form on the website | Message appears in Admin → Contact Messages |
-
-Browser console (F12) should show no red errors. A message about a blocked request usually means
-`CORS_ORIGIN` does not match the address you are visiting.
-
----
-
-## 12. Updating the site after the first deployment
+Over SSH:
 
 ```bash
-cd /www/wwwroot/knsoftic
-git pull                       # or upload the changed files
-
-cd backend
-npm ci --omit=dev
-npm run migrate
-pm2 restart knsoftic-api
-
-cd ../frontend
-npm ci
-npm run build
-pm2 restart knsoftic-web
+cd ~/domains/knsoftic.com/knsoftic
+git log --oneline -10          # find the commit you want
+git checkout <commit-id>
+sh deploy.sh
 ```
 
-Two rules worth keeping:
-- Always run `npm run migrate` before restarting the API.
-- Never delete `public/uploads` or the `.env` files during an update.
-
-Roll back by checking out the previous version and repeating the same steps.
+To return to the latest: `git checkout main && git pull && sh deploy.sh`.
 
 ---
 
-## 13. Backups
+## If something goes wrong
 
-aaPanel → Cron → Add task, twice:
+**The website shows an old version**
+Files arrived but nothing was rebuilt. Run `sh deploy.sh` over SSH. If the build succeeded but the
+page is unchanged, restart the app in hPanel → Node.js.
 
-- **Backup database** — `kn_softic_db`, daily, keep 7 copies
-- **Backup directory** — `/www/wwwroot/knsoftic/public/uploads`, weekly, keep 4 copies
-
-Also keep a copy of `backend/.env` somewhere safe and private. Without `JWT_SECRET` every signed-in
-session ends; without the database password the API cannot start.
-
----
-
-## 14. If something goes wrong
-
-**502 Bad Gateway**
-The Node app is not running. `pm2 status`, then `pm2 logs knsoftic-web --lines 50` (or
-`knsoftic-api`). A common cause is a missing `.env` value — the API stops on purpose and says which
-one.
-
-**The website loads but has no content**
+**The site loads but has no content**
 The browser cannot reach the API. Open https://api.knsoftic.com/api/settings directly. If that
-works, check `CORS_ORIGIN` in `backend/.env` matches your site address exactly, and that both sites
-use HTTPS. Restart the API after any change to `.env`.
+works, check `CORS_ORIGIN` in `backend/.env` is exactly `https://knsoftic.com`, then restart the API.
 
-**Images are broken**
-Check `UPLOAD_DIR` points at the folder that holds the files, that the folder is owned by `www`,
-and that https://api.knsoftic.com/uploads/<filename> opens. New uploads failing with an error are
-usually `client_max_body_size` being too small in Nginx.
+**Images are missing after moving folders**
+`public/uploads` was not copied across, or `UPLOAD_DIR` points at the old path. Copy the folder and
+correct the path, then restart the API.
+
+**The build fails with "JavaScript heap out of memory"**
+Shared hosting has limited memory. Try:
+
+```bash
+cd frontend && NODE_OPTIONS=--max-old-space-size=1024 npm run build
+```
+
+If it still fails, build on your computer and upload only the `.next` folder — but then a plain
+GitHub deployment is not enough by itself.
 
 **"Too many sign-in attempts"**
-The protection against password guessing. It clears after 15 minutes, or immediately with
-`pm2 restart knsoftic-api`. If it triggers for everybody at once, the `X-Forwarded-For` header from
-step 7 is missing, so every visitor is counted as one.
+Protection against password guessing; it clears after 15 minutes, or immediately if you restart the
+API.
 
-**The build runs out of memory**
-Add swap (aaPanel → Toolbox → Swap, 2 GB) and run `npm run build` again.
+**Git deployment fails: "directory not empty"**
+Hostinger only installs into an empty folder. Use a new folder (Part 1, Step 3).
 
-**Database errors after an update**
-Run `npm run migrate` in `backend`. It is safe to run repeatedly and reports each change it makes.
+### Building without SSH
+
+If your plan has no SSH, you have two options:
+
+1. **Use hPanel's terminal** if your plan offers one (Advanced → Terminal) and run the same
+   commands.
+2. **Build on your computer** (`npm run build` in `frontend`) and upload the resulting `.next`
+   folder plus `node_modules` through File manager. This works, but it is the manual method you are
+   moving away from — SSH is worth enabling if your plan allows it.
 
 ---
 
 ## Quick reference
 
 ```bash
-pm2 status                       # what is running
-pm2 logs knsoftic-api --lines 50 # API log
-pm2 logs knsoftic-web --lines 50 # website log
-pm2 restart knsoftic-api
-pm2 restart knsoftic-web
+# On your computer
+git add -A && git commit -m "..." && git push origin main
 
-cd /www/wwwroot/knsoftic/backend && npm test     # 54 API + 7 migration checks, no database needed
-cd /www/wwwroot/knsoftic/backend && npm run migrate
+# On the server
+cd ~/domains/knsoftic.com/knsoftic
+git pull            # only needed if you are not using hPanel's Deploy button
+sh deploy.sh
 ```
 
-| File | What it holds |
-|---|---|
-| `backend/.env` | Database details, tokens, allowed site addresses, uploads folder |
-| `frontend/.env.production` | API and site addresses used at build time |
-| `database/final_database.sql` | Complete schema for a fresh installation |
-| `public/uploads/` | Every uploaded image |
+| Stays on the server, never in GitHub |
+|---|
+| `backend/.env` |
+| `frontend/.env.production` |
+| `public/uploads/` |
