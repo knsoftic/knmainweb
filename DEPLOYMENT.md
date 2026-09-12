@@ -248,8 +248,29 @@ After the first GitHub deployment, check each of these:
 `deploy.sh` runs `npm run migrate` for you. It only adds what is missing and never deletes data, so
 it is safe to run repeatedly.
 
-For a brand-new database (not your case, but worth knowing): import
-`database/final_database.sql` in phpMyAdmin, then run the migration.
+### Setting up a database from scratch
+
+Two files are provided in `database/`:
+
+| File | What it contains | Use it when |
+|---|---|---|
+| `knsoftic_complete.sql` | All 30 tables **with your website content** — settings, services, courses, projects, team, testimonials, hero slides, homepage cards, blog posts, SEO | Moving to a new database or server |
+| `final_database.sql` | The same tables with only template/sample content | Starting a site from nothing |
+
+Steps for either one:
+
+1. Create an empty database in hPanel → **Databases**.
+2. phpMyAdmin → your database → **Import** → choose the file → Go.
+   (Or `mysql -u <user> -p <database> < database/knsoftic_complete.sql`.)
+3. In `backend`, run `npm run migrate`.
+4. Create your login: `ADMIN_EMAIL=... ADMIN_NAME=... ADMIN_PASSWORD=... npm run create-admin`.
+
+`knsoftic_complete.sql` deliberately contains **no administrator accounts and no contact
+messages** — you create your own login in step 4, so an old password from a backup can never be
+used to get in.
+
+Images are files, not database rows: copy `public/uploads` across as well, or pictures will be
+missing.
 
 To add an administrator:
 
