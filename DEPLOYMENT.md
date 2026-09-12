@@ -317,8 +317,36 @@ works, check `CORS_ORIGIN` in `backend/.env` is exactly `https://knsoftic.com`, 
 `public/uploads` was not copied across, or `UPLOAD_DIR` points at the old path. Copy the folder and
 correct the path, then restart the API.
 
+**The build fails with "GLIBC_2.29' not found", or "Turbopack is not supported on this platform"**
+The full message looks like this:
+
+```
+⚠ Attempted to load @next/swc-linux-x64-gnu, but an error occurred:
+  /lib64/libm.so.6: version `GLIBC_2.29' not found
+Error: Turbopack is not supported on this platform (linux/x64) because native bindings
+are not available.
+```
+
+This is already handled and should not happen again. The reason: Next.js ships a fast compiler
+written in Rust, and Hostinger's servers are older than that compiler needs, so Next.js falls back
+to a WebAssembly version of it — which its newest builder, Turbopack, cannot use. The older Webpack
+builder can, so the project is set to use it: `frontend/package.json` has
+
+```json
+"build": "next build --webpack"
+```
+
+If you still see this error, the server has an older copy of the code. Pull the latest version
+(hPanel → Advanced → GIT → **Deploy**, or `git pull`) and run `sh deploy.sh` again.
+
+Because of the WebAssembly fallback the build is noticeably slower here than on your computer —
+several minutes is normal. It is not stuck. The first build after `npm ci` also downloads that
+WebAssembly compiler by itself, so the server needs internet access during the build (it already
+has it, or `npm ci` would not work either).
+
 **The build fails with "JavaScript heap out of memory"**
-Shared hosting has limited memory. Try:
+Shared hosting has limited memory. `deploy.sh` already retries once with a smaller memory limit;
+to do it by hand:
 
 ```bash
 cd frontend && NODE_OPTIONS=--max-old-space-size=1024 npm run build
@@ -326,6 +354,15 @@ cd frontend && NODE_OPTIONS=--max-old-space-size=1024 npm run build
 
 If it still fails, build on your computer and upload only the `.next` folder — but then a plain
 GitHub deployment is not enough by itself.
+
+**`npm ci` prints "deprecated" warnings and "2 low severity vulnerabilities"**
+Harmless, and expected. They come from packages that other packages depend on, none of them
+reachable by a visitor. Do **not** run `npm audit fix --force`: it installs versions the project was
+never tested against and is a far more likely way to break the site than the warnings themselves.
+
+**The build stops with "Node.js version is too old"**
+`deploy.sh` checks this before it starts. Set Node to 20.9 or newer in hPanel → Advanced → Node.js
+and run it again.
 
 **"Too many sign-in attempts"**
 Protection against password guessing; it clears after 15 minutes, or immediately if you restart the

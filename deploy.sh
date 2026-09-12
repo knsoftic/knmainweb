@@ -13,6 +13,16 @@ cd "$ROOT"
 echo "==> Project: $ROOT"
 node -v
 
+# Node 20.9 or newer is required. Older versions fail late, in the middle of the build,
+# with confusing errors - so stop here instead, with a message that says what to do.
+NODE_MAJOR=$(node -p "process.versions.node.split('.')[0]")
+NODE_MINOR=$(node -p "process.versions.node.split('.')[1]")
+if [ "$NODE_MAJOR" -lt 20 ] || { [ "$NODE_MAJOR" -eq 20 ] && [ "$NODE_MINOR" -lt 9 ]; }; then
+  echo "!! This version of Node is too old. Node 20.9 or newer is required."
+  echo "   Change it in hPanel -> Advanced -> Node.js, then run this script again."
+  exit 1
+fi
+
 # ---------------------------------------------------------------- API
 echo "==> API: installing dependencies"
 cd "$ROOT/backend"
@@ -26,8 +36,15 @@ echo "==> Website: installing dependencies"
 cd "$ROOT/frontend"
 npm ci
 
-echo "==> Website: building"
-npm run build
+# The build uses Webpack on purpose (see "build" in frontend/package.json). Hostinger's
+# servers are too old for Next.js's fast native compiler, so it falls back to WebAssembly -
+# and the newer Turbopack builder cannot run that way. Webpack can, so it works everywhere.
+# Expect this step to take several minutes on shared hosting.
+echo "==> Website: building (this is the slow part)"
+if ! npm run build; then
+  echo "==> Build failed. Retrying with a smaller memory limit, in case the server ran out."
+  NODE_OPTIONS=--max-old-space-size=1024 npm run build
+fi
 
 # ---------------------------------------------------------- Restarting
 cd "$ROOT"
