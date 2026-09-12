@@ -14,6 +14,7 @@ export default function ChangePasswordPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     setMessage({ type: '', text: '' });
 
     if (newPassword !== confirmPassword) {
@@ -21,8 +22,8 @@ export default function ChangePasswordPage() {
       return;
     }
 
-    if (newPassword.length < 6) {
-      setMessage({ type: 'error', text: 'New password must be at least 6 characters long.' });
+    if (newPassword.length < 8) {
+      setMessage({ type: 'error', text: 'New password must be at least 8 characters long.' });
       return;
     }
 
@@ -30,16 +31,22 @@ export default function ChangePasswordPage() {
     try {
       const res = await apiService.changePassword({ currentPassword, newPassword });
       if (res.success) {
-        setMessage({ type: 'success', text: 'Password changed successfully! You will be logged out shortly.' });
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
 
-        // Log the user out after a short delay so they can use the new password
-        setTimeout(() => {
-          sessionStorage.removeItem('admin_token');
-          router.replace('/admin/login');
-        }, 2500);
+        if (res.token) {
+          // The server revokes every other session and issues a fresh token for this one.
+          sessionStorage.setItem('admin_token', res.token);
+          setMessage({ type: 'success', text: 'Password changed successfully. All other sessions have been signed out.' });
+        } else {
+          // No replacement token returned: the current one may be revoked, so sign in again.
+          setMessage({ type: 'success', text: 'Password changed successfully! You will be logged out shortly.' });
+          setTimeout(() => {
+            sessionStorage.removeItem('admin_token');
+            router.replace('/admin/login');
+          }, 2500);
+        }
       } else {
         setMessage({ type: 'error', text: res.error || 'Failed to change password.' });
       }
@@ -90,6 +97,7 @@ export default function ChangePasswordPage() {
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             required
+            minLength={8}
             style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ddd' }}
           />
         </div>

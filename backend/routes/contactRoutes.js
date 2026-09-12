@@ -2,10 +2,18 @@ const express = require('express');
 const authMiddleware = require('../middleware/authMiddleware');
 const contactController = require('../controllers/contactController');
 
-exports.createContactRouter = () => {
+/**
+ * @param {{ submitLimiter?: import('express').RequestHandler }} [options]
+ *   submitLimiter throttles the public form only, so admin inbox actions don't use up its quota.
+ */
+exports.createContactRouter = ({ submitLimiter } = {}) => {
   const router = express.Router();
 
-  router.post('/', contactController.createMessage);
+  if (submitLimiter) {
+    router.post('/', submitLimiter, contactController.createMessage);
+  } else {
+    router.post('/', contactController.createMessage);
+  }
   router.get('/', authMiddleware, contactController.getMessages);
   router.get('/:id', authMiddleware, contactController.getMessage);
   router.put('/:id', authMiddleware, contactController.updateMessage);

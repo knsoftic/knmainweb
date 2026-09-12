@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { AdminTable } from '../../../components/common/admin-table';
 import { AdminButton, AdminInput, AdminTextarea, AdminImageUpload } from '../../../components/common/admin-form-elements';
 import { apiService } from '../../../services/api';
+import { useLoadOnMount } from '../../../utils/use-load-on-mount';
+import { confirmAction, notify } from '../../../components/common/admin-feedback';
 
 const emptyProject = {
   id: '',
@@ -46,21 +48,24 @@ export default function ProjectsManager() {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [currentItem, setCurrentItem] = useState<any>(null);
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  const loadItems = async () => {
+    const data = await apiService.get('/projects');
+    return Array.isArray(data) ? data : [];
+  };
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const data = await apiService.get('/projects');
-      setItems(Array.isArray(data) ? data : []);
+      setItems(await loadItems());
     } catch (e) {
       console.error(e);
     }
     setLoading(false);
   };
+
+  useLoadOnMount(loadItems, setItems, { onSettled: () => setLoading(false) });
 
   const handleEdit = (item: any) => {
     setCurrentItem({ ...item, id_exists: true });
@@ -68,12 +73,12 @@ export default function ProjectsManager() {
   };
 
   const handleDelete = async (item: any) => {
-    if (confirm(`Are you sure you want to delete ${item.title}?`)) {
+    if (await confirmAction(`Are you sure you want to delete ${item.title}?`)) {
       try {
         await apiService.delete(`/projects/${item.id}`);
         setItems(items.filter((project) => project.id !== item.id));
       } catch (e) {
-        alert('Failed to delete');
+        notify('Failed to delete');
       }
     }
   };
@@ -106,6 +111,8 @@ export default function ProjectsManager() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
+    setSaving(true);
     try {
       const payload = buildPayload(currentItem || emptyProject);
 
@@ -119,7 +126,9 @@ export default function ProjectsManager() {
       setIsEditing(false);
       setCurrentItem(null);
     } catch (e) {
-      alert('Failed to save');
+      notify('Failed to save');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -248,7 +257,7 @@ export default function ProjectsManager() {
         </div>
 
         <div style={{ display: 'flex', gap: '15px', marginTop: '20px' }}>
-          <AdminButton type="submit">Save</AdminButton>
+          <AdminButton type="submit" loading={saving}>{saving ? 'Saving...' : 'Save'}</AdminButton>
           <AdminButton type="button" variant="secondary" onClick={() => setIsEditing(false)}>Cancel</AdminButton>
         </div>
       </form>

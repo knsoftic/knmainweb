@@ -1,11 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
+const { optionalAuth } = require('../middleware/authMiddleware');
 const blogController = require('../controllers/blogController');
 
-// Public routes
-router.get('/', blogController.getAll);
-router.get('/:slug', blogController.getBySlug);
+// Public routes (a logged-in admin also sees drafts and scheduled posts)
+router.get('/', optionalAuth, blogController.getAll);
+router.get('/:slug', optionalAuth, blogController.getBySlug);
 
 // Admin routes
 router.post('/', authMiddleware, blogController.create);

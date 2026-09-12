@@ -36,5 +36,27 @@ module.exports = {
   query: async (sql, values) => {
     const [results] = await pool.execute(sql, values);
     return results;
-  }
+  },
+
+  /**
+   * Runs `work(query)` on one connection inside a transaction: every statement is committed
+   * together, or none are (rolled back) if anything throws.
+   */
+  transaction: async (work) => {
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      const result = await work(async (sql, values) => {
+        const [rows] = await connection.execute(sql, values);
+        return rows;
+      });
+      await connection.commit();
+      return result;
+    } catch (err) {
+      await connection.rollback();
+      throw err;
+    } finally {
+      connection.release();
+    }
+  },
 };

@@ -1,6 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import { SITE_URL } from '../../utils/site';
+
+// Some stored slugs have stray whitespace; trim and encode so shared links resolve.
+const getPostUrl = (slug: string) => `${SITE_URL}/blog/${encodeURIComponent(String(slug || '').trim())}`;
 
 function ShareLink({
   href,
@@ -51,7 +55,7 @@ function CopyButton({ slug }: { slug: string }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
-    const url = `https://knsoftic.com/blog/${slug}`;
+    const url = getPostUrl(slug);
     try {
       await navigator.clipboard.writeText(url);
     } catch {
@@ -105,7 +109,8 @@ export default function ShareButtons({
   slug: string;
   title: string;
 }) {
-  const pageUrl = `https://knsoftic.com/blog/${slug}`;
+  const pageUrl = getPostUrl(slug);
+  const encodedUrl = encodeURIComponent(pageUrl);
   const encodedTitle = encodeURIComponent(title);
 
   return (
@@ -133,7 +138,7 @@ export default function ShareButtons({
 
       {/* X / Twitter */}
       <ShareLink
-        href={`https://twitter.com/intent/tweet?url=${pageUrl}&text=${encodedTitle}`}
+        href={`https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`}
         title="Share on X (Twitter)"
         bg="#000"
         shadow="0 4px 12px rgba(0,0,0,0.18)"
@@ -151,7 +156,7 @@ export default function ShareButtons({
 
       {/* Facebook */}
       <ShareLink
-        href={`https://www.facebook.com/sharer/sharer.php?u=${pageUrl}`}
+        href={`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`}
         title="Share on Facebook"
         bg="#1877F2"
         shadow="0 4px 12px rgba(24,119,242,0.3)"
@@ -161,7 +166,7 @@ export default function ShareButtons({
 
       {/* LinkedIn */}
       <ShareLink
-        href={`https://www.linkedin.com/shareArticle?mini=true&url=${pageUrl}&title=${encodedTitle}`}
+        href={`https://www.linkedin.com/shareArticle?mini=true&url=${encodedUrl}&title=${encodedTitle}`}
         title="Share on LinkedIn"
         bg="#0A66C2"
         shadow="0 4px 12px rgba(10,102,194,0.3)"

@@ -121,10 +121,11 @@ export default function CommentForm({ postId }: CommentFormProps) {
         <form onSubmit={handleSubmit}>
           <div className="row g-3" style={{ marginBottom: '16px' }}>
             <div className="col-md-6">
-              <label style={{ display: 'block', marginBottom: '7px', fontWeight: 600, color: '#4a4a4a', fontSize: '0.88rem' }}>
+              <label htmlFor="comment-name" style={{ display: 'block', marginBottom: '7px', fontWeight: 600, color: '#4a4a4a', fontSize: '0.88rem' }}>
                 Name *
               </label>
               <input
+                id="comment-name"
                 type="text"
                 required
                 value={name}
@@ -144,10 +145,11 @@ export default function CommentForm({ postId }: CommentFormProps) {
               />
             </div>
             <div className="col-md-6">
-              <label style={{ display: 'block', marginBottom: '7px', fontWeight: 600, color: '#4a4a4a', fontSize: '0.88rem' }}>
+              <label htmlFor="comment-email" style={{ display: 'block', marginBottom: '7px', fontWeight: 600, color: '#4a4a4a', fontSize: '0.88rem' }}>
                 Email *
               </label>
               <input
+                id="comment-email"
                 type="email"
                 required
                 value={email}
@@ -169,10 +171,11 @@ export default function CommentForm({ postId }: CommentFormProps) {
           </div>
 
           <div style={{ marginBottom: '24px' }}>
-            <label style={{ display: 'block', marginBottom: '7px', fontWeight: 600, color: '#4a4a4a', fontSize: '0.88rem' }}>
+            <label htmlFor="comment-body" style={{ display: 'block', marginBottom: '7px', fontWeight: 600, color: '#4a4a4a', fontSize: '0.88rem' }}>
               Comment *
             </label>
             <textarea
+              id="comment-body"
               required
               rows={5}
               value={comment}
@@ -222,7 +225,7 @@ export default function CommentForm({ postId }: CommentFormProps) {
             {submitting ? (
               <><i className="fa fa-spinner fa-spin" /> Submitting...</>
             ) : (
-              <><i className="fa fa-paper-plane-o" /> Post Comment</>
+              <><i className="fa-regular fa-paper-plane" /> Post Comment</>
             )}
           </button>
         </form>

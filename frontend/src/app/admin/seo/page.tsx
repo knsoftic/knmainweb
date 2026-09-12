@@ -4,6 +4,53 @@ import { useState, useEffect } from 'react';
 import { AdminButton, AdminInput, AdminTextarea, AdminImageUpload, AdminSelect } from '../../../components/common/admin-form-elements';
 import { resolveImageUrl } from '../../../utils/image-url';
 import { apiService } from '../../../services/api';
+import { useLoadOnMount } from '../../../utils/use-load-on-mount';
+import { confirmAction, notify } from '../../../components/common/admin-feedback';
+
+type HeadingCounts = { h1: number; h2: number; h3: number; h4: number; h5: number; h6: number };
+
+// Fetches the live page (bypassing the browser cache) and counts its headings; null if it can't be loaded.
+const countPageHeadings = async (slug: string): Promise<HeadingCounts | null> => {
+  try {
+    const response = await fetch(slug === 'home' ? '/' : `/${slug}`, { cache: 'no-store' });
+    if (!response.ok) return null;
+    const doc = new DOMParser().parseFromString(await response.text(), 'text/html');
+    const count = (tag: string) => doc.querySelectorAll(tag).length;
+    return { h1: count('h1'), h2: count('h2'), h3: count('h3'), h4: count('h4'), h5: count('h5'), h6: count('h6') };
+  } catch (error) {
+    console.error('Failed to analyze headings', error);
+    return null;
+  }
+};
+
+// Server-managed columns: the SEO endpoints ignore them, so they're never sent back.
+const stripServerFields = (data: any) => {
+  const { id, created_at, updated_at, ...rest } = data || {};
+  return rest;
+};
+
+const isAbsoluteHttpUrl = (value: string) => {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+};
+
+// Redirect sources are matched against request paths, so store "/path?query" even if a full URL was pasted.
+const normalizeRedirectSource = (raw: string) => {
+  const value = raw.trim();
+  if (/^https?:\/\//i.test(value)) {
+    try {
+      const url = new URL(value);
+      return `${url.pathname}${url.search}`;
+    } catch {
+      // Not a parseable URL; fall through and treat it as a path.
+    }
+  }
+  return value.startsWith('/') ? value : `/${value}`;
+};
 
 export default function SeoManager() {
   const [activeTab, setActiveTab] = useState('global');
@@ -12,60 +59,86 @@ export default function SeoManager() {
   const [redirects, setRedirects] = useState<any[]>([]);
   const [mediaItems, setMediaItems] = useState<any[]>([]);
   const [selectedPage, setSelectedPage] = useState<any>(null);
-  const [headingCounts, setHeadingCounts] = useState<{h1: number, h2: number, h3: number, h4: number, h5: number, h6: number} | null>(null);
-  const [analyzingHeadings, setAnalyzingHeadings] = useState(false);
+  // Heading counts for the selected page, tagged with the page and the run (bumped after a save) they belong to.
+  const [headingResult, setHeadingResult] = useState<{ key: string; counts: HeadingCounts | null } | null>(null);
+  const [headingRun, setHeadingRun] = useState(0);
   
   const [loading, setLoading] = useState(true);
+  const [savingGlobal, setSavingGlobal] = useState(false);
+  const [savingPage, setSavingPage] = useState(false);
+  const [savingRedirect, setSavingRedirect] = useState(false);
+  const [savingMediaId, setSavingMediaId] = useState<number | null>(null);
+
+  const siteUrlValue = typeof globalSeo.site_url === 'string' ? globalSeo.site_url.trim() : '';
+  const siteUrlInvalid = !!siteUrlValue && !isAbsoluteHttpUrl(siteUrlValue);
 
   const standardPages = ['home', 'about', 'services', 'projects', 'products', 'blog', 'courses', 'team', 'contact'];
 
 
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  // Each part loads independently, so one failing request doesn't hide the others.
+  const loadData = () => Promise.allSettled([
+    apiService.getGlobalSeo(),
+    apiService.get('/seo/pages'),
+    apiService.get('/seo/redirects'),
+    apiService.get('/media'),
+  ]);
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const gSeo = await apiService.getGlobalSeo();
-      setGlobalSeo(gSeo || {});
-      const pSeo = await apiService.get('/seo/pages');
-      setPagesSeo(pSeo || []);
-      const rData = await apiService.get('/seo/redirects');
-      setRedirects(rData || []);
-      const mData = await apiService.get('/media');
-      setMediaItems(mData || []);
-    } catch (e) {
-      console.error(e);
-    }
+  const applyData = ([gSeo, pSeo, rData, mData]: PromiseSettledResult<any>[]) => {
+    const take = (result: PromiseSettledResult<any>, apply: (value: any) => void) => {
+      if (result.status === 'fulfilled') apply(result.value);
+      else console.error(result.reason);
+    };
+    take(gSeo, (value) => setGlobalSeo(value || {}));
+    take(pSeo, (value) => setPagesSeo(value || []));
+    take(rData, (value) => setRedirects(value || []));
+    take(mData, (value) => setMediaItems(value || []));
     setLoading(false);
   };
 
+  const fetchData = async () => {
+    setLoading(true);
+    applyData(await loadData());
+  };
+
+  useLoadOnMount(loadData, applyData);
+
   const handleGlobalSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (savingGlobal) return;
+    if (siteUrlInvalid) {
+      setActiveTab('global');
+      notify('Site URL must be a full address starting with http:// or https:// (e.g. https://knsoftic.com).');
+      return;
+    }
+    setSavingGlobal(true);
     try {
-      await apiService.updateGlobalSeo(globalSeo);
-      alert('Global SEO updated successfully!');
-    } catch (e) {
-      alert('Failed to update Global SEO');
+      const payload = stripServerFields(globalSeo);
+      if (typeof payload.site_url === 'string') payload.site_url = payload.site_url.trim();
+      await apiService.updateGlobalSeo(payload);
+      notify('Global SEO updated successfully!');
+    } catch (err: any) {
+      notify('Failed to update Global SEO' + (err?.message ? `: ${err.message}` : ''));
+    } finally {
+      setSavingGlobal(false);
     }
   };
 
   const handlePageSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedPage) return;
+    if (!selectedPage || savingPage) return;
+    setSavingPage(true);
     try {
-      await apiService.updatePageSeo(selectedPage.page_slug, selectedPage);
-      alert(`SEO for ${selectedPage.page_slug} updated successfully!`);
+      await apiService.updatePageSeo(selectedPage.page_slug, stripServerFields(selectedPage));
+      notify(`SEO for ${selectedPage.page_slug} updated successfully!`);
       fetchData(); // Refresh to update list
-      
+
       // Re-analyze headings to reflect changes, with a slight delay to allow revalidation
-      setTimeout(() => {
-        analyzePageHeadings(selectedPage.page_slug);
-      }, 1000);
-    } catch (e) {
-      alert('Failed to update Page SEO');
+      setTimeout(() => setHeadingRun((run) => run + 1), 1000);
+    } catch (err: any) {
+      notify('Failed to update Page SEO' + (err?.message ? `: ${err.message}` : ''));
+    } finally {
+      setSavingPage(false);
     }
   };
 
@@ -74,48 +147,34 @@ export default function SeoManager() {
     setSelectedPage(existing || { page_slug: slug, is_index: 1, is_follow: 1 });
   };
 
-  useEffect(() => {
-    if (selectedPage?.page_slug) {
-      analyzePageHeadings(selectedPage.page_slug);
-    } else {
-      setHeadingCounts(null);
-    }
-  }, [selectedPage?.page_slug]);
+  // "Analyzing" until a result exists for the current page and run.
+  const headingKey = selectedPage?.page_slug ? `${selectedPage.page_slug}:${headingRun}` : null;
+  const analyzingHeadings = !!headingKey && headingResult?.key !== headingKey;
+  const headingCounts = headingKey && headingResult?.key === headingKey ? headingResult.counts : null;
 
-  const analyzePageHeadings = async (slug: string) => {
-    setAnalyzingHeadings(true);
-    setHeadingCounts(null);
-    try {
-      const url = slug === 'home' ? '/' : `/${slug}`;
-      const response = await fetch(url, { cache: 'no-store' }); // bypass browser cache
-      if (response.ok) {
-        const html = await response.text();
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-        
-        // Count tags within the main content if possible, or entire body
-        setHeadingCounts({
-          h1: doc.querySelectorAll('h1').length,
-          h2: doc.querySelectorAll('h2').length,
-          h3: doc.querySelectorAll('h3').length,
-          h4: doc.querySelectorAll('h4').length,
-          h5: doc.querySelectorAll('h5').length,
-          h6: doc.querySelectorAll('h6').length,
-        });
-      }
-    } catch (error) {
-      console.error('Failed to analyze headings', error);
-    }
-    setAnalyzingHeadings(false);
-  };
+  useEffect(() => {
+    const slug = selectedPage?.page_slug;
+    if (!slug) return;
+
+    const key = `${slug}:${headingRun}`;
+    let active = true;
+    countPageHeadings(slug).then((counts) => {
+      if (active) setHeadingResult({ key, counts });
+    });
+    return () => {
+      active = false;
+    };
+  }, [selectedPage?.page_slug, headingRun]);
 
   const handleRedirectSave = async (e: React.FormEvent, id?: number) => {
     e.preventDefault();
+    if (savingRedirect) return;
     const form = e.target as HTMLFormElement;
-    const source = (form.elements.namedItem('source') as HTMLInputElement).value;
-    const target = (form.elements.namedItem('target') as HTMLInputElement).value;
+    const source = normalizeRedirectSource((form.elements.namedItem('source') as HTMLInputElement).value);
+    const target = (form.elements.namedItem('target') as HTMLInputElement).value.trim();
     const status = parseInt((form.elements.namedItem('status') as HTMLSelectElement).value);
 
+    setSavingRedirect(true);
     try {
       if (id) {
         await apiService.put(`/seo/redirects/${id}`, { source_url: source, target_url: target, status_code: status });
@@ -124,22 +183,36 @@ export default function SeoManager() {
       }
       form.reset();
       fetchData();
-    } catch (err) { alert('Failed to save redirect'); }
+    } catch (err: any) {
+      notify('Failed to save redirect' + (err?.message ? `: ${err.message}` : ''));
+    } finally {
+      setSavingRedirect(false);
+    }
   };
 
   const handleDeleteRedirect = async (id: number) => {
-    if (confirm('Delete redirect?')) {
-      await apiService.delete(`/seo/redirects/${id}`);
-      fetchData();
+    if (await confirmAction('Delete redirect?')) {
+      try {
+        await apiService.delete(`/seo/redirects/${id}`);
+        fetchData();
+      } catch (err: any) {
+        notify('Failed to delete redirect' + (err?.message ? `: ${err.message}` : ''));
+      }
     }
   };
 
   const handleMediaUpdate = async (item: any, e: React.FormEvent) => {
     e.preventDefault();
+    if (savingMediaId !== null) return;
+    setSavingMediaId(item.id);
     try {
       await apiService.put(`/media/${item.id}`, item);
-      alert('Media SEO updated!');
-    } catch (err) { alert('Failed to update media SEO'); }
+      notify('Media SEO updated!');
+    } catch (err) {
+      notify('Failed to update media SEO');
+    } finally {
+      setSavingMediaId(null);
+    }
   };
 
   const renderCharacterCount = (text: string, min: number, max: number) => {
@@ -224,7 +297,12 @@ export default function SeoManager() {
         <div style={{ background: '#fff', padding: '30px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', maxWidth: '800px' }}>
           <form onSubmit={handleGlobalSave}>
             <AdminInput label="Website Name" value={globalSeo.website_title || ''} onChange={(e) => setGlobalSeo({...globalSeo, website_title: e.target.value})} />
-            <AdminInput label="Site URL (Base)" value={globalSeo.site_url || ''} onChange={(e) => setGlobalSeo({...globalSeo, site_url: e.target.value})} placeholder="e.g. https://www.knsoftic.com" />
+            <AdminInput label="Site URL (Base)" value={globalSeo.site_url || ''} onChange={(e) => setGlobalSeo({...globalSeo, site_url: e.target.value})} placeholder="e.g. https://knsoftic.com" />
+            {siteUrlInvalid && (
+              <div style={{ fontSize: '12px', marginTop: '-10px', marginBottom: '15px', color: '#dc3545' }}>
+                Must be a full address starting with http:// or https:// (e.g. https://knsoftic.com).
+              </div>
+            )}
             <AdminInput label="Global Meta Title" value={globalSeo.meta_title || ''} onChange={(e) => setGlobalSeo({...globalSeo, meta_title: e.target.value})} />
             {renderCharacterCount(globalSeo.meta_title, 50, 60)}
             <AdminTextarea label="Global Meta Description" value={globalSeo.meta_description || ''} onChange={(e) => setGlobalSeo({...globalSeo, meta_description: e.target.value})} />
@@ -243,7 +321,7 @@ export default function SeoManager() {
             </div>
             <AdminImageUpload label="Default Open Graph Image" value={globalSeo.default_og_image || ''} onChange={(url) => setGlobalSeo({...globalSeo, default_og_image: url})} />
 
-            <div style={{ marginTop: '30px' }}><AdminButton type="submit">Save Global SEO</AdminButton></div>
+            <div style={{ marginTop: '30px' }}><AdminButton type="submit" loading={savingGlobal}>{savingGlobal ? 'Saving...' : 'Save Global SEO'}</AdminButton></div>
           </form>
         </div>
       )}
@@ -323,7 +401,7 @@ export default function SeoManager() {
                     </div>
                   </div>
 
-                  <div style={{ marginTop: '30px' }}><AdminButton type="submit">Save Page SEO</AdminButton></div>
+                  <div style={{ marginTop: '30px' }}><AdminButton type="submit" loading={savingPage}>{savingPage ? 'Saving...' : 'Save Page SEO'}</AdminButton></div>
                 </form>
               </div>
             ) : (
@@ -355,7 +433,7 @@ export default function SeoManager() {
             <AdminTextarea label="Local Business Schema" value={globalSeo.schema_local_business || ''} onChange={(e) => setGlobalSeo({...globalSeo, schema_local_business: e.target.value})} placeholder='{"@context": "https://schema.org", "@type": "LocalBusiness", ...}' />
             <AdminTextarea label="Website Schema" value={globalSeo.schema_website || ''} onChange={(e) => setGlobalSeo({...globalSeo, schema_website: e.target.value})} placeholder='{"@context": "https://schema.org", "@type": "WebSite", ...}' />
 
-            <div style={{ marginTop: '30px' }}><AdminButton type="submit">Save Changes</AdminButton></div>
+            <div style={{ marginTop: '30px' }}><AdminButton type="submit" loading={savingGlobal}>{savingGlobal ? 'Saving...' : 'Save Changes'}</AdminButton></div>
           </form>
         </div>
       )}
@@ -376,7 +454,7 @@ export default function SeoManager() {
             <p style={{ fontSize: '14px', color: '#6c757d', marginBottom: '15px' }}>Leave blank to use the default automatically generated robots.txt file.</p>
             <AdminTextarea label="robots.txt rules" value={globalSeo.robots_txt_content || ''} onChange={(e) => setGlobalSeo({...globalSeo, robots_txt_content: e.target.value})} placeholder="User-agent: *&#10;Allow: /" />
 
-            <div style={{ marginTop: '30px' }}><AdminButton type="submit">Save Settings</AdminButton></div>
+            <div style={{ marginTop: '30px' }}><AdminButton type="submit" loading={savingGlobal}>{savingGlobal ? 'Saving...' : 'Save Settings'}</AdminButton></div>
           </form>
         </div>
       )}
@@ -387,7 +465,7 @@ export default function SeoManager() {
             <div style={{ flex: 2 }}><AdminInput label="Source URL (e.g. /old-page)" name="source" required /></div>
             <div style={{ flex: 2 }}><AdminInput label="Target URL (e.g. /new-page)" name="target" required /></div>
             <div style={{ flex: 1 }}><AdminSelect label="Type" name="status" options={[{label: '301 Permanent', value: '301'}, {label: '302 Temporary', value: '302'}]} /></div>
-            <div style={{ paddingBottom: '20px' }}><AdminButton type="submit">Add Redirect</AdminButton></div>
+            <div style={{ paddingBottom: '20px' }}><AdminButton type="submit" loading={savingRedirect}>{savingRedirect ? 'Adding...' : 'Add Redirect'}</AdminButton></div>
           </form>
 
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -437,7 +515,7 @@ export default function SeoManager() {
                     newItems[idx].title = e.target.value;
                     setMediaItems(newItems);
                   }} />
-                  <div style={{ marginTop: '10px' }}><AdminButton type="submit">Update Image</AdminButton></div>
+                  <div style={{ marginTop: '10px' }}><AdminButton type="submit" loading={savingMediaId === item.id} disabled={savingMediaId !== null}>{savingMediaId === item.id ? 'Saving...' : 'Update Image'}</AdminButton></div>
                 </form>
               </div>
             ))}

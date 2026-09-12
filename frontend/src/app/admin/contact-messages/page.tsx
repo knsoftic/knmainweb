@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { AdminButton } from '../../../components/common/admin-form-elements';
 import { apiService } from '../../../services/api';
+import { useLoadOnMount } from '../../../utils/use-load-on-mount';
+import { confirmAction, notify } from '../../../components/common/admin-feedback';
 
 const statusOptions = ['all', 'new', 'read', 'replied', 'closed'] as const;
 
@@ -15,6 +17,14 @@ const statusStyles: Record<string, { background: string; color: string }> = {
 
 const resolveStatus = (value: string) => statusStyles[value] || statusStyles.new;
 
+// Strict address check so a crafted value (e.g. "a@b.com?bcc=x@y.com") can't inject mailto headers.
+const SAFE_EMAIL_REGEX = /^[A-Za-z0-9._+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$/;
+
+const getSafeReplyEmail = (value: unknown) => {
+  const email = typeof value === 'string' ? value.trim() : '';
+  return SAFE_EMAIL_REGEX.test(email) ? email : null;
+};
+
 export default function ContactMessagesPage() {
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,18 +33,18 @@ export default function ContactMessagesPage() {
   const [selectedMessage, setSelectedMessage] = useState<any>(null);
   const [savingStatus, setSavingStatus] = useState(false);
 
-  useEffect(() => {
-    fetchMessages();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const loadMessages = async () => {
+    const data = await apiService.get('/contact-messages');
+    return (Array.isArray(data) ? data : []) as any[];
+  };
 
   const fetchMessages = async () => {
     setLoading(true);
     try {
-      const data = await apiService.get('/contact-messages');
-      setMessages(Array.isArray(data) ? data : []);
+      const data = await loadMessages();
+      setMessages(data);
       if (selectedMessage) {
-        const refreshed = (Array.isArray(data) ? data : []).find((message) => message.id === selectedMessage.id);
+        const refreshed = data.find((message) => message.id === selectedMessage.id);
         if (refreshed) {
           setSelectedMessage(refreshed);
         }
@@ -45,6 +55,8 @@ export default function ContactMessagesPage() {
       setLoading(false);
     }
   };
+
+  useLoadOnMount(loadMessages, setMessages, { onSettled: () => setLoading(false) });
 
   const filteredMessages = useMemo(() => {
     const searchValue = search.trim().toLowerCase();
@@ -89,7 +101,7 @@ export default function ContactMessagesPage() {
       setSelectedMessage(updated);
       setMessages((current) => current.map((item) => (item.id === selectedMessage.id ? updated : item)));
     } catch (error) {
-      alert('Failed to update message status');
+      notify('Failed to update message status');
     } finally {
       setSavingStatus(false);
     }
@@ -100,7 +112,7 @@ export default function ContactMessagesPage() {
       return;
     }
 
-    if (!confirm(`Delete the message from ${selectedMessage.name}?`)) {
+    if (!await confirmAction(`Delete the message from ${selectedMessage.name}?`)) {
       return;
     }
 
@@ -109,7 +121,7 @@ export default function ContactMessagesPage() {
       setMessages((current) => current.filter((item) => item.id !== selectedMessage.id));
       setSelectedMessage(null);
     } catch (error) {
-      alert('Failed to delete message');
+      notify('Failed to delete message');
     }
   };
 
@@ -120,6 +132,8 @@ export default function ContactMessagesPage() {
     replied: messages.filter((item) => item.status === 'replied').length,
     closed: messages.filter((item) => item.status === 'closed').length,
   }), [messages]);
+
+  const safeReplyEmail = selectedMessage ? getSafeReplyEmail(selectedMessage.email) : null;
 
   return (
     <div>
@@ -295,17 +309,24 @@ export default function ContactMessagesPage() {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #e9ecef', paddingTop: '20px' }}>
-              <a
-                href={`mailto:${selectedMessage.email}?subject=Re: ${encodeURIComponent(selectedMessage.subject || 'Website Contact')}`}
-                style={{ background: '#0d6efd', color: '#fff', textDecoration: 'none', padding: '10px 20px', borderRadius: '8px', fontSize: '0.95rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '8px' }}
-                onClick={() => {
-                  if (selectedMessage.status !== 'replied') {
-                    updateStatus('replied');
-                  }
-                }}
-              >
-                <i className="bi bi-reply-fill"></i> Reply via Email
-              </a>
+              {safeReplyEmail ? (
+                <a
+                  href={`mailto:${safeReplyEmail}?subject=${encodeURIComponent(`Re: ${selectedMessage.subject || 'Website Contact'}`)}`}
+                  style={{ background: '#0d6efd', color: '#fff', textDecoration: 'none', padding: '10px 20px', borderRadius: '8px', fontSize: '0.95rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                  onClick={() => {
+                    if (selectedMessage.status !== 'replied') {
+                      updateStatus('replied');
+                    }
+                  }}
+                >
+                  <i className="bi bi-reply-fill"></i> Reply via Email
+                </a>
+              ) : (
+                <span style={{ color: '#6c757d', fontSize: '0.9rem', alignSelf: 'center' }}>
+                  <i className="bi bi-exclamation-triangle" style={{ marginRight: '6px' }}></i>
+                  Invalid email address — cannot reply from here.
+                </span>
+              )}
               <button
                 type="button"
                 onClick={deleteMessage}

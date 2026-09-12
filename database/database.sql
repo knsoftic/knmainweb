@@ -350,8 +350,9 @@ CREATE TABLE `admin_users` (
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO `admin_users` (`id`, `role_id`, `full_name`, `email`, `password_hash`, `is_active`) VALUES
-(1, 1, 'KN Softic Admin', 'admin@knsoftic.com', '$2b$10$x4WVHhVdycZ0YJBXeemEAO8fbLCJObLIZA8RdvdP9Raa8WbWCYaZi', 1);
+-- No admin account is seeded here (a password hash doesn't belong in the repository).
+-- After importing, create one with:
+--   cd backend && ADMIN_EMAIL=you@example.com ADMIN_PASSWORD='a-strong-password' npm run create-admin
 
 -- --------------------------------------------------------
 -- Primary Keys & Indexes

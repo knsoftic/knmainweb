@@ -1,0 +1,57 @@
+import Link from 'next/link';
+import { resolveImageUrl } from '../../utils/image-url';
+import { revealDelay } from '../../utils/reveal';
+import { getImageSeo } from '../../utils/seo';
+
+const splitList = (value?: string | null) =>
+  String(value || '').split(/[\n,]/).map((item) => item.trim()).filter(Boolean);
+
+/** Card for one project. The whole card opens that project's page. */
+export async function ProjectCard({ project, index = 0, columns = 3 }: { project: any; index?: number; columns?: number }) {
+  const imgSeo = await getImageSeo(project.image_url);
+  const imageUrl = project.image_url ? resolveImageUrl(project.image_url) : '';
+  const tags = [...splitList(project.technologies), ...splitList(project.features)].slice(0, 3);
+  const badge = project.badge || project.label || project.category;
+  const owner = String(project.client_name || project.category || 'Project').replace(/^client:\s*/i, '');
+
+  return (
+    <Link
+      href={`/projects/${encodeURIComponent(project.id)}`}
+      className="ks-card ks-card--hover ks-project-card"
+      data-reveal=""
+      style={revealDelay(index, columns)}
+      aria-label={`${project.title} — view project`}
+    >
+      <span className="ks-project-card__media">
+        {imageUrl ? (
+          <>
+            {/* A blurred copy fills the frame, so wide logos and tall screenshots both sit well. */}
+            <span className="ks-project-card__fill" style={{ backgroundImage: `url(${imageUrl})` }} aria-hidden="true"></span>
+            <img src={imageUrl} alt={imgSeo.alt_text || project.title} title={imgSeo.title} loading="lazy" />
+          </>
+        ) : (
+          <span className="ks-project-card__icon" aria-hidden="true">
+            <i className={`fa ${project.icon || 'fa-folder-open'}`}></i>
+          </span>
+        )}
+        {badge && <span className="ks-chip ks-chip--white">{badge}</span>}
+      </span>
+
+      <span className="ks-card__body">
+        <span className="ks-card__title">{project.title}</span>
+        <span className="ks-card__text ks-clamp-3">{project.description}</span>
+
+        {tags.length > 0 && (
+          <span className="ks-tags">
+            {tags.map((tag) => <span key={tag} className="ks-chip">{tag}</span>)}
+          </span>
+        )}
+
+        <span className="ks-card__foot ks-card__foot--line">
+          <span className="ks-meta">{owner}</span>
+          <span className="ks-link">View project <i className="fa fa-arrow-right" aria-hidden="true"></i></span>
+        </span>
+      </span>
+    </Link>
+  );
+}

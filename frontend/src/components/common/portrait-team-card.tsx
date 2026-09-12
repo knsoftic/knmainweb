@@ -1,6 +1,5 @@
-import React from 'react';
-import Image from 'next/image';
 import { resolveImageUrl } from '../../utils/image-url';
+import { revealDelay } from '../../utils/reveal';
 import { getImageSeo } from '../../utils/seo';
 
 export interface TeamMember {
@@ -13,30 +12,53 @@ export interface TeamMember {
   linkedin_url?: string;
 }
 
-export async function PortraitTeamCard({ member }: { member: TeamMember }) {
+const getInitials = (name?: string) => (name || '')
+  .trim()
+  .split(/\s+/)
+  .slice(0, 2)
+  .map((word) => word.charAt(0).toUpperCase())
+  .join('');
+
+/** `index` (position in the grid) staggers the scroll-in animation across each row of four. */
+export async function PortraitTeamCard({ member, index = 0 }: { member: TeamMember; index?: number }) {
   const imgSrc = member.image_url || member.image || '';
   const finalImgSrc = resolveImageUrl(imgSrc);
-  const imgSeo = await getImageSeo(imgSrc);
+  const imgSeo = imgSrc ? await getImageSeo(imgSrc) : null;
+  const socials = [
+    { url: member.facebook_url, label: 'Facebook', icon: 'fab fa-facebook-f' },
+    { url: member.twitter_url, label: 'X / Twitter', icon: 'fab fa-x-twitter' },
+    { url: member.linkedin_url, label: 'LinkedIn', icon: 'fab fa-linkedin-in' },
+  ].filter((social) => Boolean(social.url));
 
   return (
-    <div className="portrait-team-card" itemScope itemType="https://schema.org/Person">
-      <div className="card-inner">
-        <div className="portrait-thumb-container">
-          <div className="glow-backdrop"></div>
-          <div className="portrait-img-box">
-            <img itemProp="image" src={finalImgSrc} alt={imgSeo.alt_text || member.name} title={imgSeo.title} className="portrait-img" style={{ objectFit: 'cover', width: '250px', height: '300px' }} />
+    <article className="ks-card ks-card--hover ks-team-card" itemScope itemType="https://schema.org/Person" data-reveal="" style={revealDelay(index, 4)}>
+      <div className="ks-team-card__photo">
+        {finalImgSrc ? (
+          <img itemProp="image" src={finalImgSrc} alt={imgSeo?.alt_text || member.name} title={imgSeo?.title} loading="lazy" />
+        ) : (
+          // No photo uploaded: show the member's initials instead of a broken image.
+          <div className="ks-team-card__initials" role="img" aria-label={member.name}>
+            {getInitials(member.name) || <i className="fa fa-user" aria-hidden="true"></i>}
           </div>
-        </div>
-        <div className="member-details">
-          <span className="member-category" itemProp="jobTitle">{member.category}</span>
-          <h4 className="member-name" itemProp="name">{member.name}</h4>
-          <ul className="member-social-icons">
-            {member.facebook_url && <li><a itemProp="sameAs" href={member.facebook_url} aria-label="Facebook"><i className="fab fa-facebook-f"></i></a></li>}
-            {member.twitter_url && <li><a itemProp="sameAs" href={member.twitter_url} aria-label="Twitter"><i className="fab fa-twitter"></i></a></li>}
-            {member.linkedin_url && <li><a itemProp="sameAs" href={member.linkedin_url} aria-label="LinkedIn"><i className="fab fa-linkedin-in"></i></a></li>}
-          </ul>
-        </div>
+        )}
       </div>
-    </div>
+      <div className="ks-team-card__info">
+        <div>
+          <h3 className="ks-team-card__name" itemProp="name">{member.name}</h3>
+          <span className="ks-team-card__role" itemProp="jobTitle">{member.category}</span>
+        </div>
+        {socials.length > 0 && (
+          <ul className="ks-team-card__social">
+            {socials.map((social) => (
+              <li key={social.label}>
+                <a itemProp="sameAs" href={social.url} target="_blank" rel="noopener noreferrer" aria-label={`${member.name} on ${social.label}`}>
+                  <i className={social.icon} aria-hidden="true"></i>
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </article>
   );
 }

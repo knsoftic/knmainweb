@@ -397,18 +397,31 @@ DROP TABLE IF EXISTS `blog_comments`;
 CREATE TABLE `blog_comments` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `post_id` int(11) NOT NULL,
+  `parent_id` int(11) DEFAULT NULL,
   `name` varchar(150) NOT NULL,
   `email` varchar(150) NOT NULL,
   `comment` text NOT NULL,
   `status` enum('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
-  KEY `post_id` (`post_id`)
+  KEY `post_id` (`post_id`),
+  KEY `parent_id` (`parent_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 -- Table structure for table `seo_metadata`
 -- --------------------------------------------------------
+DROP TABLE IF EXISTS `seo_metadata`;
+CREATE TABLE `seo_metadata` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `page_path` varchar(255) NOT NULL,
+  `meta_title` varchar(255) DEFAULT NULL,
+  `meta_description` text DEFAULT NULL,
+  `meta_keywords` text DEFAULT NULL,
+  `og_title` varchar(255) DEFAULT NULL,
+  `og_description` text DEFAULT NULL,
+  `og_image` varchar(500) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `page_path` (`page_path`)
@@ -466,8 +479,9 @@ CREATE TABLE `admin_users` (
   CONSTRAINT `admin_users_ibfk_1` FOREIGN KEY (`role_id`) REFERENCES `admin_roles` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO `admin_users` (`id`, `role_id`, `full_name`, `email`, `password_hash`, `is_active`) VALUES
-(1, 1, 'KN Softic Admin', 'admin@knsoftic.com', '$2b$10$x4WVHhVdycZ0YJBXeemEAO8fbLCJObLIZA8RdvdP9Raa8WbWCYaZi', 1);
+-- No admin account is seeded here (a password hash doesn't belong in the repository).
+-- After importing, create one with:
+--   cd backend && ADMIN_EMAIL=you@example.com ADMIN_PASSWORD='a-strong-password' npm run create-admin
 
 -- --------------------------------------------------------
 -- Table structure for table `homepage_featured_services`
@@ -489,6 +503,60 @@ CREATE TABLE `homepage_featured_courses` (
   `course_id` varchar(100) NOT NULL,
   `display_order` int(11) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- --------------------------------------------------------
+-- Table structure for table `homepage_cards`
+-- --------------------------------------------------------
+DROP TABLE IF EXISTS `homepage_cards`;
+CREATE TABLE `homepage_cards` (
+  `id` varchar(100) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `image_url` varchar(255) NOT NULL DEFAULT '',
+  `read_more_url` varchar(255) DEFAULT '#',
+  `display_order` int(11) DEFAULT 0,
+  `is_active` tinyint(1) DEFAULT 1,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Table structure for table `portfolio_projects`
+-- --------------------------------------------------------
+DROP TABLE IF EXISTS `portfolio_projects`;
+CREATE TABLE `portfolio_projects` (
+  `id` varchar(100) NOT NULL,
+  `filter_slug` varchar(100) NOT NULL,
+  `icon` varchar(50) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text NOT NULL,
+  `label` varchar(100) NOT NULL,
+  `client_name` varchar(255) DEFAULT NULL,
+  `display_order` int(11) NOT NULL DEFAULT 0,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `filter_slug` (`filter_slug`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Table structure for table `products`
+-- --------------------------------------------------------
+DROP TABLE IF EXISTS `products`;
+CREATE TABLE `products` (
+  `id` varchar(100) NOT NULL,
+  `filter_slug` varchar(100) NOT NULL,
+  `badge` varchar(50) DEFAULT NULL,
+  `icon` varchar(50) NOT NULL,
+  `category` varchar(100) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text NOT NULL,
+  `display_order` int(11) NOT NULL DEFAULT 0,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `filter_slug` (`filter_slug`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;

@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { AdminButton, AdminImageUpload, AdminInput, AdminTextarea } from '../../../components/common/admin-form-elements';
 import { apiService } from '../../../services/api';
 import { parseSocialLinks } from '../../../utils/settings';
+import { useLoadOnMount } from '../../../utils/use-load-on-mount';
+
+const LOAD_FAILED_MESSAGE = 'Failed to load settings from the server. Saving is disabled until they load.';
 
 type SocialLinkRow = {
   platform: string;
@@ -41,9 +44,6 @@ const defaultSettings = {
   vat_number: '',
   customer_care_number: '+92 345 2470250',
   light_logo_url: '',
-  dark_logo_url: '',
-  mobile_logo_url: '',
-  default_banner_url: '/assets/images/cover-object.png',
   default_og_image_url: '/assets/images/cover-object.png',
   social_links: [],
   contact_email: 'info@knsoftic.com',
@@ -89,27 +89,39 @@ export default function SettingsManager() {
   const [saving, setSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   const [statusError, setStatusError] = useState('');
+  // Set when the settings couldn't be loaded: the form (still holding defaults) is hidden and saving is blocked.
+  const [loadError, setLoadError] = useState('');
   const [activeTab, setActiveTab] = useState<TabType>('general');
 
-  useEffect(() => {
-    fetchSettings();
-  }, []);
 
-  const fetchSettings = async () => {
-    setLoading(true);
-    setStatusMessage('');
-    setStatusError('');
+  const loadSettings = async () => normalizeLoadedSettings(await apiService.get('/settings'));
+
+  // `silent` refreshes after a save without the full-page spinner and without clearing the status message.
+  const fetchSettings = async ({ silent = false }: { silent?: boolean } = {}) => {
+    if (!silent) {
+      setLoading(true);
+      setStatusMessage('');
+      setStatusError('');
+    }
 
     try {
-      const data = await apiService.get('/settings');
-      setSettings(normalizeLoadedSettings(data));
+      setSettings(await loadSettings());
+      setLoadError('');
     } catch (error) {
       console.error(error);
-      setStatusError('Failed to load settings from the server.');
+      if (!silent) setLoadError(LOAD_FAILED_MESSAGE);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
+
+  useLoadOnMount(loadSettings, setSettings, {
+    onError: (error) => {
+      console.error(error);
+      setLoadError(LOAD_FAILED_MESSAGE);
+    },
+    onSettled: () => setLoading(false),
+  });
 
   const socialLinks: SocialLinkRow[] = useMemo(() => {
     return Array.isArray(settings.social_links) ? settings.social_links : presetSocialRows;
@@ -152,6 +164,7 @@ export default function SettingsManager() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving || loadError) return;
     setSaving(true);
     setStatusMessage('');
     setStatusError('');
@@ -165,7 +178,7 @@ export default function SettingsManager() {
       await apiService.put('/settings', payload);
       setStatusMessage('Global settings saved successfully.');
       setTimeout(() => setStatusMessage(''), 3000);
-      await fetchSettings();
+      await fetchSettings({ silent: true });
     } catch (error) {
       console.error(error);
       setStatusError('Failed to save global settings. Please try again.');
@@ -191,6 +204,34 @@ export default function SettingsManager() {
     </div>
   );
 
+  // Never render the (default-filled) form when the real settings failed to load, so it can't be saved over them.
+  if (loadError) return (
+    <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+      <h2 style={{ margin: '0 0 24px', fontWeight: 800, color: '#1a1d20', fontSize: '2rem', letterSpacing: '-0.5px' }}>Global Settings</h2>
+      <div style={{
+        padding: '24px',
+        borderRadius: '12px',
+        background: 'rgba(220,53,69,0.1)',
+        color: '#dc3545',
+        border: '1px solid rgba(220,53,69,0.2)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '16px',
+        flexWrap: 'wrap',
+        fontWeight: 500,
+      }}>
+        <span>
+          <i className="fa fa-exclamation-circle" style={{ fontSize: '1.2rem', marginRight: '10px' }}></i>
+          {loadError}
+        </span>
+        <AdminButton type="button" variant="secondary" onClick={() => fetchSettings()}>
+          <i className="fa fa-refresh" style={{ marginRight: '8px' }}></i> Retry
+        </AdminButton>
+      </div>
+    </div>
+  );
+
   return (
     <div style={{ paddingBottom: '120px', maxWidth: '1200px', margin: '0 auto', position: 'relative' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '20px', marginBottom: '30px', flexWrap: 'wrap' }}>
@@ -199,7 +240,7 @@ export default function SettingsManager() {
           <p style={{ margin: '8px 0 0', color: '#6c757d', fontSize: '1.05rem' }}>Centralized configuration panel for all website-wide data.</p>
         </div>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          <AdminButton type="button" variant="secondary" onClick={fetchSettings}>
+          <AdminButton type="button" variant="secondary" onClick={() => fetchSettings()}>
             <i className="fa fa-refresh" style={{ marginRight: '8px' }}></i> Reload
           </AdminButton>
         </div>
@@ -343,16 +384,13 @@ export default function SettingsManager() {
             <div style={{ animation: 'fadeIn 0.4s ease' }}>
               <div style={{ marginBottom: '32px' }}>
                 <h3 style={{ margin: 0, color: '#1a1d20', fontWeight: 700, fontSize: '1.5rem' }}>Branding Assets</h3>
-                <p style={{ margin: '8px 0 0', color: '#6c757d' }}>Manage logos, favicons, and global banners.</p>
+                <p style={{ margin: '8px 0 0', color: '#6c757d' }}>Manage logos, the favicon, and the default social sharing image.</p>
               </div>
               <div className="row g-4">
                 <div className="col-md-6"><AdminImageUpload label="Primary Website Logo" value={settings.logo_url || ''} onChange={(url) => updateField('logo_url', url)} /></div>
                 <div className="col-md-6"><AdminImageUpload label="Favicon" value={settings.favicon_url || ''} onChange={(url) => updateField('favicon_url', url)} /></div>
                 <div className="col-md-6"><AdminImageUpload label="Light Logo (For Dark Backgrounds)" value={settings.light_logo_url || ''} onChange={(url) => updateField('light_logo_url', url)} /></div>
-                <div className="col-md-6"><AdminImageUpload label="Dark Logo (For Light Backgrounds)" value={settings.dark_logo_url || ''} onChange={(url) => updateField('dark_logo_url', url)} /></div>
-                <div className="col-md-6"><AdminImageUpload label="Mobile Logo" value={settings.mobile_logo_url || ''} onChange={(url) => updateField('mobile_logo_url', url)} /></div>
-                <div className="col-md-6"><AdminImageUpload label="Default Website Banner" value={settings.default_banner_url || ''} onChange={(url) => updateField('default_banner_url', url)} /></div>
-                <div className="col-12"><AdminImageUpload label="Default Open Graph (SEO) Image" value={settings.default_og_image_url || ''} onChange={(url) => updateField('default_og_image_url', url)} /></div>
+                <div className="col-md-6"><AdminImageUpload label="Default Open Graph (SEO) Image" value={settings.default_og_image_url || ''} onChange={(url) => updateField('default_og_image_url', url)} /></div>
               </div>
             </div>
           )}

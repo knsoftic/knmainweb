@@ -1,14 +1,11 @@
-'use client';
-import { AdminShell } from '../../components/layout/admin-shell';
-import { usePathname } from 'next/navigation';
+import type { Metadata } from 'next';
+import { AdminChrome } from '../../components/layout/admin-chrome';
+
+// The admin panel must never be indexed, whatever robots.txt happens to say.
+export const metadata: Metadata = {
+  robots: { index: false, follow: false, nocache: true, googleBot: { index: false, follow: false } },
+};
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  const isLoginPage = pathname === '/admin/login';
-
-  return (
-    <div suppressHydrationWarning>
-      {isLoginPage ? children : <AdminShell>{children}</AdminShell>}
-    </div>
-  );
+  return <AdminChrome>{children}</AdminChrome>;
 }

@@ -28,17 +28,22 @@ exports.updateFeaturedServices = async (req, res) => {
       return res.status(400).json({ error: 'Maximum of 3 services can be featured on the homepage' });
     }
 
-    await db.query('DELETE FROM homepage_featured_services');
-
-    for (let i = 0; i < serviceIds.length; i++) {
-      await db.query(
-        'INSERT INTO homepage_featured_services (service_id, display_order) VALUES (?, ?)',
-        [serviceIds[i], i + 1]
-      );
-    }
+    // Replace the list atomically so a failed insert can't leave the homepage with no featured services.
+    await db.transaction(async (query) => {
+      await query('DELETE FROM homepage_featured_services');
+      for (let i = 0; i < serviceIds.length; i++) {
+        await query(
+          'INSERT INTO homepage_featured_services (service_id, display_order) VALUES (?, ?)',
+          [serviceIds[i], i + 1]
+        );
+      }
+    });
 
     res.json({ success: true, message: 'Featured services updated successfully' });
   } catch (err) {
+    if (err.code === 'ER_NO_REFERENCED_ROW_2' || err.code === 'ER_BAD_NULL_ERROR') {
+      return res.status(400).json({ error: 'One of the selected services no longer exists. Refresh the page and try again.' });
+    }
     console.error(err);
     res.status(500).json({ error: 'Failed to update featured services' });
   }

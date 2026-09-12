@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { AdminTable } from '../../../../components/common/admin-table';
 import { AdminButton } from '../../../../components/common/admin-form-elements';
 import { apiService } from '../../../../services/api';
+import { useLoadOnMount } from '../../../../utils/use-load-on-mount';
 import { resolveImageUrl } from '../../../../utils/image-url';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
+import { confirmAction, notify } from '../../../../components/common/admin-feedback';
 
 function BlogPostsManagerInner() {
   const [posts, setPosts] = useState<any[]>([]);
@@ -16,20 +18,22 @@ function BlogPostsManagerInner() {
   const searchParams = useSearchParams();
   const statusFilter = searchParams.get('status') || 'all';
 
-  useEffect(() => {
-    fetchPosts();
-  }, []);
+  const loadPosts = async () => {
+    const data = await apiService.get('/blog/posts');
+    return data || [];
+  };
 
   const fetchPosts = async () => {
     setLoading(true);
     try {
-      const data = await apiService.get('/blog/posts');
-      setPosts(data || []);
+      setPosts(await loadPosts());
     } catch (e) {
       console.error(e);
     }
     setLoading(false);
   };
+
+  useLoadOnMount(loadPosts, setPosts, { onSettled: () => setLoading(false) });
 
   const filteredPosts = statusFilter === 'all'
     ? posts
@@ -97,29 +101,39 @@ function BlogPostsManagerInner() {
   };
 
   const handleDelete = async (item: any) => {
-    if (confirm(`Delete post "${item.title}"?`)) {
+    if (await confirmAction(`Delete post "${item.title}"?`)) {
       try {
         await apiService.delete(`/blog/posts/${item.id}`);
         setPosts((prev) => prev.filter((p) => p.id !== item.id));
       } catch {
-        alert('Failed to delete post');
+        notify('Failed to delete post');
       }
     }
   };
 
   const handleDuplicate = async (item: any) => {
-    if (confirm(`Duplicate "${item.title}"?`)) {
+    if (await confirmAction(`Duplicate "${item.title}"?`)) {
       try {
         await apiService.post(`/blog/posts/${item.id}/duplicate`, {});
         fetchPosts();
       } catch {
-        alert('Failed to duplicate post');
+        notify('Failed to duplicate post');
       }
     }
   };
 
   const handlePreview = (item: any) => {
-    window.open(`/blog/${item.slug}`, '_blank');
+    const slug = String(item.slug || '').trim();
+    if (!slug) {
+      notify('This post has no URL slug yet. Save it with a title first.');
+      return;
+    }
+    if (item.status === 'published') {
+      window.open(`/blog/${encodeURIComponent(slug)}`, '_blank');
+    } else {
+      // Drafts/scheduled posts 404 on the public blog; use the authenticated admin preview instead.
+      router.push(`/admin/blog/posts/preview?slug=${encodeURIComponent(slug)}`);
+    }
   };
 
   const filterTabs = [

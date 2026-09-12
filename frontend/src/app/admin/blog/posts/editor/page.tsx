@@ -4,8 +4,10 @@ import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AdminButton, AdminInput, AdminTextarea, AdminImageUpload } from '../../../../../components/common/admin-form-elements';
 import { apiService } from '../../../../../services/api';
+import { useLoadOnMount } from '../../../../../utils/use-load-on-mount';
 import dynamic from 'next/dynamic';
 import 'react-quill-new/dist/quill.snow.css';
+import { confirmAction, notify } from '../../../../../components/common/admin-feedback';
 
 const ReactQuill = dynamic(() => import('react-quill-new'), {
   ssr: false,
@@ -16,6 +18,29 @@ const ReactQuill = dynamic(() => import('react-quill-new'), {
   ),
 });
 
+// <input type="datetime-local"> works in local time, so build "YYYY-MM-DDTHH:mm" from local components
+// (toISOString() is UTC and shifted the date by the UTC offset on every save).
+const toLocalDateTimeInput = (value?: string | null) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (isNaN(date.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+};
+
+// A datetime-local value (no offset) is parsed as local time; send it to the API as an ISO 8601 UTC string.
+const fromLocalDateTimeInput = (value?: string | null) => {
+  if (!value) return null;
+  const date = new Date(value);
+  return isNaN(date.getTime()) ? null : date.toISOString();
+};
+
+// The admin list endpoint includes drafts and scheduled posts.
+const findPost = async (postId: string) => {
+  const posts = await apiService.get('/blog/posts');
+  return (Array.isArray(posts) ? posts : []).find((p: any) => String(p.id) === postId) || null;
+};
+
 function BlogPostEditorInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -23,6 +48,8 @@ function BlogPostEditorInner() {
 
   const [loading, setLoading] = useState(!!id);
   const [saving, setSaving] = useState(false);
+  // Status as last saved on the server (null for a new post); decides whether the primary action is "Update".
+  const [savedStatus, setSavedStatus] = useState<string | null>(null);
   const [categories, setCategories] = useState<any[]>([]);
   const [tags, setTags] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'content' | 'seo' | 'settings'>('content');
@@ -60,45 +87,50 @@ function BlogPostEditorInner() {
     twitter_card: 'summary_large_image',
   });
 
-  useEffect(() => {
-    fetchMetadata();
-    if (id) fetchPost(id);
-  }, [id]);
+  const loadMetadata = async () => {
+    const [cats, tgs] = await Promise.all([
+      apiService.get('/blog/categories'),
+      apiService.get('/blog/tags'),
+    ]);
+    return { cats: (cats || []) as any[], tgs: (tgs || []) as any[] };
+  };
+
+  const applyMetadata = ({ cats, tgs }: { cats: any[]; tgs: any[] }) => {
+    setCategories(cats);
+    setTags(tgs);
+  };
 
   const fetchMetadata = async () => {
     try {
-      const [cats, tgs] = await Promise.all([
-        apiService.get('/blog/categories'),
-        apiService.get('/blog/tags'),
-      ]);
-      setCategories(cats || []);
-      setTags(tgs || []);
+      applyMetadata(await loadMetadata());
     } catch (e) {
       console.error(e);
     }
   };
 
+  useLoadOnMount(loadMetadata, applyMetadata);
+
   const handleQuickAddCategory = async () => {
     const name = newCategoryName.trim();
-    if (!name) return;
+    if (!name || addingCategory) return;
     setAddingCategory(true);
     try {
       const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
       const res = await apiService.post('/blog/categories', { name, slug, display_order: 0 });
       await fetchMetadata();
-      // Auto-select the new category if the API returned an id
-      if (res?.id) set('category_id', String(res.id));
+      // The create endpoint returns the new row's id; select it once it's in the refreshed list.
+      if (res?.id != null) set('category_id', String(res.id));
       setNewCategoryName('');
       setShowAddCategory(false);
     } catch (e) {
-      alert('Failed to create category');
+      notify('Failed to create category');
     }
     setAddingCategory(false);
   };
 
   const handleQuickAddTag = async () => {
     const name = newTagName.trim();
-    if (!name) return;
+    if (!name || addingTag) return;
     setAddingTag(true);
     try {
       const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
@@ -109,38 +141,49 @@ function BlogPostEditorInner() {
       setNewTagName('');
       setShowAddTag(false);
     } catch (e) {
-      alert('Failed to create tag');
+      notify('Failed to create tag');
     }
     setAddingTag(false);
   };
 
-  const fetchPost = async (postId: string) => {
-    try {
-      const posts = await apiService.get('/blog/posts');
-      const current = posts.find((p: any) => String(p.id) === postId);
-      if (current) {
-        // Normalise published_at to datetime-local input format
-        let pubAt = current.published_at || '';
-        if (pubAt) {
-          pubAt = new Date(pubAt).toISOString().slice(0, 16);
-        }
+  // Editing an existing post: load it once the id is known; state is set when the data arrives.
+  useEffect(() => {
+    if (!id) return;
+    let active = true;
+    findPost(id)
+      .then((current) => {
+        if (!active || !current) return;
+        setSavedStatus(current.status || null);
         setPost({
           ...current,
-          published_at: pubAt,
+          // Normalise published_at to the datetime-local input format (local time)
+          published_at: toLocalDateTimeInput(current.published_at),
           tags_json: typeof current.tags_json === 'string'
             ? (() => { try { return JSON.parse(current.tags_json); } catch { return []; } })()
             : (current.tags_json || []),
         });
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
+      })
+      .catch(console.error)
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [id]);
 
-  const handleSave = async (_e: React.MouseEvent | React.FormEvent, forceStatus?: string) => {
+  const handleSave = async (_e: React.MouseEvent | React.FormEvent, status: 'draft' | 'published' | 'scheduled') => {
     if ('preventDefault' in _e) _e.preventDefault();
+    if (saving) return;
+
+    if (status === 'scheduled' && !post.published_at) {
+      notify('Pick a publish date to schedule this post.');
+      return;
+    }
+    if (status === 'draft' && savedStatus === 'published' && !await confirmAction('This post is live. Saving it as a draft will unpublish it. Continue?')) {
+      return;
+    }
+
     setSaving(true);
 
     try {
@@ -152,10 +195,10 @@ function BlogPostEditorInner() {
       const payload = {
         ...post,
         slug,
-        status: forceStatus || post.status,
+        status,
         category_id: post.category_id ? parseInt(post.category_id) : null,
         reading_time: post.reading_time ? parseInt(post.reading_time) : null,
-        published_at: nullIfEmpty(post.published_at),
+        published_at: fromLocalDateTimeInput(post.published_at),
         canonical_url: nullIfEmpty(post.canonical_url),
         og_title: nullIfEmpty(post.og_title),
         og_description: nullIfEmpty(post.og_description),
@@ -175,7 +218,7 @@ function BlogPostEditorInner() {
       setTimeout(() => setSaveSuccess(false), 3000);
       router.push('/admin/blog/posts');
     } catch (err: any) {
-      alert(err.message || 'Failed to save post. Please try again.');
+      notify(err.message || 'Failed to save post. Please try again.');
       setSaving(false);
     }
   };
@@ -216,10 +259,20 @@ function BlogPostEditorInner() {
   }
 
   const tabs = [
-    { id: 'content', label: 'Content', icon: 'fa-file-text-o' },
-    { id: 'seo', label: 'SEO', icon: 'fa-search' },
-    { id: 'settings', label: 'Open Graph & Social', icon: 'fa-share-alt' },
+    { id: 'content', label: 'Content', icon: 'far fa-file-alt' },
+    { id: 'seo', label: 'SEO', icon: 'fa fa-search' },
+    { id: 'settings', label: 'Open Graph & Social', icon: 'fa fa-share-alt' },
   ];
+
+  // "Save Draft" always saves a draft. The primary action schedules when the status select is "Scheduled";
+  // otherwise it publishes, or — for a post that's already live — updates it and keeps it published.
+  const primaryStatus: 'published' | 'scheduled' = p('status') === 'scheduled' ? 'scheduled' : 'published';
+  const primaryLabel = primaryStatus === 'scheduled' ? 'Schedule' : savedStatus === 'published' ? 'Update' : 'Publish';
+  const primaryIcon = primaryStatus === 'scheduled' ? 'far fa-clock' : savedStatus === 'published' ? 'fa fa-check' : 'far fa-paper-plane';
+
+  // Every tag on the post gets a removable chip, including names no longer in the tag list (renamed/deleted).
+  const postTags: string[] = Array.isArray(post.tags_json) ? post.tags_json : [];
+  const knownTagNames = new Set(tags.map((t) => t.name));
 
   return (
     <div style={{ paddingBottom: '100px' }}>
@@ -236,10 +289,10 @@ function BlogPostEditorInner() {
             <i className="fa fa-arrow-left" /> Cancel
           </AdminButton>
           <AdminButton type="button" variant="secondary" onClick={(e) => handleSave(e, 'draft')} disabled={saving}>
-            <i className="fa fa-floppy-o" /> Save Draft
+            <i className="far fa-save" /> Save Draft
           </AdminButton>
-          <AdminButton type="button" onClick={(e) => handleSave(e, 'published')} disabled={saving}>
-            {saving ? <><i className="fa fa-spinner fa-spin" /> Saving...</> : <><i className="fa fa-paper-plane-o" /> Publish</>}
+          <AdminButton type="button" onClick={(e) => handleSave(e, primaryStatus)} disabled={saving}>
+            {saving ? <><i className="fa fa-spinner fa-spin" /> Saving...</> : <><i className={primaryIcon} /> {primaryLabel}</>}
           </AdminButton>
         </div>
       </div>
@@ -277,7 +330,7 @@ function BlogPostEditorInner() {
                   transition: 'all 0.2s',
                 }}
               >
-                <i className={`fa ${tab.icon}`} />
+                <i className={tab.icon} />
                 {tab.label}
               </button>
             ))}
@@ -402,7 +455,7 @@ function BlogPostEditorInner() {
           {/* Publishing */}
           <div style={{ background: '#fff', padding: '20px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
             <h5 style={{ margin: '0 0 14px 0', fontWeight: 700, color: '#2c3e50', fontSize: '1rem' }}>
-              <i className="fa fa-paper-plane-o" style={{ marginRight: 8, color: '#7a6ad8' }} />Publishing
+              <i className="far fa-paper-plane" style={{ marginRight: 8, color: '#7a6ad8' }} />Publishing
             </h5>
 
             <div style={{ marginBottom: '14px' }}>
@@ -426,6 +479,11 @@ function BlogPostEditorInner() {
                 onChange={(e) => set('published_at', e.target.value)}
                 style={{ ...inputStyle }}
               />
+              {p('status') === 'scheduled' && (
+                <p style={{ margin: '6px 0 0', fontSize: '0.78rem', color: '#6c757d' }}>
+                  The post goes live automatically at this date and time.
+                </p>
+              )}
             </div>
 
             <div style={{ marginBottom: '10px' }}>
@@ -484,12 +542,12 @@ function BlogPostEditorInner() {
                     type="button"
                     title="Delete this category permanently"
                     onClick={async () => {
-                      if (!confirm('Delete this category permanently?')) return;
+                      if (!await confirmAction('Delete this category permanently?')) return;
                       try {
                         await apiService.delete(`/blog/categories/${p('category_id')}`);
                         set('category_id', '');
                         await fetchMetadata();
-                      } catch (err: any) { alert('Failed to delete category: ' + (err?.message || 'Unknown error')); }
+                      } catch (err: any) { notify('Failed to delete category: ' + (err?.message || 'Unknown error')); }
                     }}
                     style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid #ffcccc', background: '#fff5f5', cursor: 'pointer', color: '#dc3545', flexShrink: 0 }}
                   >
@@ -565,6 +623,48 @@ function BlogPostEditorInner() {
                   </button>
                 </div>
               )}
+              {postTags.length > 0 && (
+                <div style={{ marginBottom: '12px' }}>
+                  <p style={{ margin: '0 0 6px', fontSize: '0.78rem', color: '#adb5bd', fontWeight: 600 }}>On this post</p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {postTags.map((name, index) => {
+                      const missing = !knownTagNames.has(name);
+                      return (
+                        <span
+                          key={`${name}-${index}`}
+                          title={missing ? 'This tag is no longer in the tag list (renamed or deleted).' : undefined}
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '4px',
+                            background: missing ? '#fff8e1' : 'rgba(141,24,208,0.12)',
+                            color: missing ? '#8a6d00' : '#8D18D0',
+                            border: `1px ${missing ? 'dashed #e0c36b' : 'solid rgba(141,24,208,0.3)'}`,
+                            padding: '4px 6px 4px 10px', borderRadius: '20px',
+                            fontSize: '0.82rem', fontWeight: 600,
+                          }}
+                        >
+                          # {name}
+                          <button
+                            type="button"
+                            title="Remove from this post"
+                            onClick={() => set('tags_json', postTags.filter((tg) => tg !== name))}
+                            style={{
+                              background: 'none', border: 'none', cursor: 'pointer',
+                              color: 'inherit', opacity: 0.6,
+                              padding: '0 2px', lineHeight: 1, fontSize: '0.75rem',
+                              display: 'flex', alignItems: 'center',
+                            }}
+                          >
+                            ✕
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                  {tags.length > 0 && (
+                    <p style={{ margin: '10px 0 6px', fontSize: '0.78rem', color: '#adb5bd', fontWeight: 600 }}>All tags</p>
+                  )}
+                </div>
+              )}
               {tags.length === 0 ? (
                 <p style={{ fontSize: '0.83rem', color: '#adb5bd', fontStyle: 'italic' }}>No tags created yet. Use "+ Add New" to create one.</p>
               ) : (
@@ -602,12 +702,12 @@ function BlogPostEditorInner() {
                           title="Delete tag permanently"
                           onClick={async (e) => {
                             e.stopPropagation();
-                            if (!confirm(`Delete tag "${t.name}" permanently?`)) return;
+                            if (!await confirmAction(`Delete tag "${t.name}" permanently?`)) return;
                             try {
                               await apiService.delete(`/blog/tags/${t.id}`);
                               set('tags_json', (post.tags_json || []).filter((tg: string) => tg !== t.name));
                               await fetchMetadata();
-                            } catch (err: any) { alert('Failed to delete tag: ' + (err?.message || 'Unknown error')); }
+                            } catch (err: any) { notify('Failed to delete tag: ' + (err?.message || 'Unknown error')); }
                           }}
                           style={{
                             background: 'none', border: 'none', cursor: 'pointer',

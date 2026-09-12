@@ -28,17 +28,22 @@ exports.updateFeaturedCourses = async (req, res) => {
       return res.status(400).json({ error: 'Maximum of 3 courses can be featured on the homepage' });
     }
 
-    await db.query('DELETE FROM homepage_featured_courses');
-
-    for (let i = 0; i < courseIds.length; i++) {
-      await db.query(
-        'INSERT INTO homepage_featured_courses (course_id, display_order) VALUES (?, ?)',
-        [courseIds[i], i + 1]
-      );
-    }
+    // Replace the list atomically so a failed insert can't leave the homepage with no featured courses.
+    await db.transaction(async (query) => {
+      await query('DELETE FROM homepage_featured_courses');
+      for (let i = 0; i < courseIds.length; i++) {
+        await query(
+          'INSERT INTO homepage_featured_courses (course_id, display_order) VALUES (?, ?)',
+          [courseIds[i], i + 1]
+        );
+      }
+    });
 
     res.json({ success: true, message: 'Featured courses updated successfully' });
   } catch (err) {
+    if (err.code === 'ER_NO_REFERENCED_ROW_2' || err.code === 'ER_BAD_NULL_ERROR') {
+      return res.status(400).json({ error: 'One of the selected courses no longer exists. Refresh the page and try again.' });
+    }
     console.error(err);
     res.status(500).json({ error: 'Failed to update featured courses' });
   }

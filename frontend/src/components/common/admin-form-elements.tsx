@@ -32,21 +32,24 @@ export function AdminTextarea({ label, ...props }: TextareaProps) {
   );
 }
 
-export function AdminButton({ children, onClick, type = "button", variant = "primary", disabled = false }: { children: React.ReactNode, onClick?: (e: any) => void, type?: "button" | "submit", variant?: "primary" | "secondary" | "danger", disabled?: boolean }) {
+export function AdminButton({ children, onClick, type = "button", variant = "primary", disabled = false, loading = false }: { children: React.ReactNode, onClick?: (e: any) => void, type?: "button" | "submit", variant?: "primary" | "secondary" | "danger", disabled?: boolean, loading?: boolean }) {
   let bg = 'linear-gradient(135deg, #8D18D0, #3930C7)';
   let color = '#fff';
   if (variant === 'secondary') { bg = '#f8f9fa'; color = '#343a40'; }
   if (variant === 'danger') { bg = '#dc3545'; color = '#fff'; }
-  
+  const isDisabled = disabled || loading;
+
   return (
     <button
       type={type}
       onClick={onClick}
-      disabled={disabled}
-      style={{ padding: '10px 24px', borderRadius: '8px', background: bg, color, border: variant === 'secondary' ? '1px solid #ced4da' : 'none', fontWeight: 600, fontSize: '0.95rem', cursor: disabled ? 'not-allowed' : 'pointer', transition: 'opacity 0.2s', width: 'fit-content', opacity: disabled ? 0.65 : 1 }}
-      onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
-      onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+      disabled={isDisabled}
+      aria-busy={loading || undefined}
+      style={{ padding: '10px 24px', borderRadius: '8px', background: bg, color, border: variant === 'secondary' ? '1px solid #ced4da' : 'none', fontWeight: 600, fontSize: '0.95rem', cursor: isDisabled ? 'not-allowed' : 'pointer', transition: 'opacity 0.2s', width: 'fit-content', opacity: isDisabled ? 0.65 : 1 }}
+      onMouseOver={(e) => { if (!isDisabled) e.currentTarget.style.opacity = '0.9'; }}
+      onMouseOut={(e) => { e.currentTarget.style.opacity = isDisabled ? '0.65' : '1'; }}
     >
+      {loading && <i className="fa fa-spinner fa-spin" style={{ marginRight: '8px' }} />}
       {children}
     </button>
   );
@@ -60,13 +63,17 @@ export function AdminImageUpload({ label, value, onChange }: { label: string, va
   const [uploading, setUploading] = useState(false);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
+    const input = e.target;
+    if (input.files && input.files[0]) {
       setUploading(true);
       try {
-        const data = await apiService.uploadFile(e.target.files[0]);
+        const data = await apiService.uploadFile(input.files[0]);
         onChange(data.url);
-      } catch (err) {
-        alert("Failed to upload image.");
+      } catch (err: any) {
+        // Show the server's reason (e.g. file too large, unsupported type) when available.
+        alert(err?.message ? `Failed to upload image: ${err.message}` : 'Failed to upload image.');
+        // Reset so picking the same file again re-triggers onChange.
+        input.value = '';
       } finally {
         setUploading(false);
       }
@@ -81,7 +88,7 @@ export function AdminImageUpload({ label, value, onChange }: { label: string, va
           <img src={resolveImageUrl(value)} alt="Preview" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #ced4da' }} />
         )}
         <div style={{ flex: 1 }}>
-          <input type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'block', width: '100%', fontSize: '0.9rem' }} disabled={uploading} />
+          <input type="file" accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml,image/x-icon,.ico" onChange={handleFileChange} style={{ display: 'block', width: '100%', fontSize: '0.9rem' }} disabled={uploading} />
           {uploading && <span style={{ fontSize: '0.85rem', color: '#8D18D0', marginTop: '5px', display: 'block' }}>Uploading...</span>}
         </div>
       </div>

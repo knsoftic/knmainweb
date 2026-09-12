@@ -1,16 +1,35 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { AdminTable } from '../../../components/common/admin-table';
 import { AdminInput, AdminTextarea, AdminButton, AdminImageUpload } from '../../../components/common/admin-form-elements';
 import { apiService } from '../../../services/api';
+import { useLoadOnMount } from '../../../utils/use-load-on-mount';
 import { resolveImageUrl } from '../../../utils/image-url';
+import { confirmAction, notify } from '../../../components/common/admin-feedback';
+
+type LoadKey = 'hero' | 'funFacts' | 'settings' | 'services' | 'featuredServices' | 'courses' | 'featuredCourses';
+
+const LOAD_LABELS: Record<LoadKey, string> = {
+  hero: 'hero slides',
+  funFacts: 'fun facts',
+  settings: 'About Us settings',
+  services: 'services',
+  featuredServices: 'featured services',
+  courses: 'courses',
+  featuredCourses: 'featured courses',
+};
 
 export default function HomepageManager() {
+  // Load state: a section whose data failed to load can't be saved, so empty values never overwrite real data.
+  const [loading, setLoading] = useState(true);
+  const [loadErrors, setLoadErrors] = useState<LoadKey[]>([]);
+
   // Hero Slides State
   const [heroSlides, setHeroSlides] = useState<any[]>([]);
   const [isEditingHero, setIsEditingHero] = useState(false);
   const [currentHeroSlide, setCurrentHeroSlide] = useState<any>(null);
+  const [isSavingHero, setIsSavingHero] = useState(false);
 
   // Settings & Fun Facts State
   const [settings, setSettings] = useState<any>({
@@ -29,33 +48,53 @@ export default function HomepageManager() {
   const [featuredCourses, setFeaturedCourses] = useState<any[]>([]);
   const [isSavingCourses, setIsSavingCourses] = useState(false);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  // Load each resource independently so one failing request doesn't blank out unrelated sections.
+  const loadData = () => Promise.allSettled([
+    apiService.get('/hero_slides'),
+    apiService.get('/fun_facts'),
+    apiService.get('/settings'),
+    apiService.get('/services'),
+    apiService.get('/homepage_services'),
+    apiService.get('/courses'),
+    apiService.get('/homepage_courses')
+  ]);
 
-  const fetchData = async () => {
-    try {
-      const [heroRes, factsRes, settingsRes, allSvcRes, featuredSvcRes, allCoursesRes, featuredCoursesRes] = await Promise.all([
-        apiService.get('/hero_slides'),
-        apiService.get('/fun_facts'),
-        apiService.get('/settings'),
-        apiService.get('/services'),
-        apiService.get('/homepage_services'),
-        apiService.get('/courses'),
-        apiService.get('/homepage_courses')
-      ]);
-      
-      setHeroSlides(heroRes || []);
-      if (factsRes.length > 0) setFunFacts(factsRes);
-      if (settingsRes) setSettings(settingsRes);
-      if (allSvcRes) setAllServices(allSvcRes);
-      if (featuredSvcRes) setFeaturedServices(featuredSvcRes);
-      if (allCoursesRes) setAllCourses(allCoursesRes);
-      if (featuredCoursesRes) setFeaturedCourses(featuredCoursesRes);
-    } catch (err) {
-      console.error(err);
-    }
+  const applyData = (results: PromiseSettledResult<any>[]) => {
+    const [heroRes, factsRes, settingsRes, allSvcRes, featuredSvcRes, allCoursesRes, featuredCoursesRes] = results;
+    const failed: LoadKey[] = [];
+    const settle = (key: LoadKey, result: PromiseSettledResult<any>, apply: (value: any) => void) => {
+      if (result.status === 'fulfilled') {
+        apply(result.value);
+      } else {
+        console.error(`Failed to load ${LOAD_LABELS[key]}`, result.reason);
+        failed.push(key);
+      }
+    };
+
+    settle('hero', heroRes, (value: any) => setHeroSlides(value || []));
+    settle('funFacts', factsRes, (value: any) => setFunFacts(Array.isArray(value) ? value : []));
+    settle('settings', settingsRes, (value: any) => { if (value) setSettings(value); });
+    settle('services', allSvcRes, (value: any) => setAllServices(value || []));
+    settle('featuredServices', featuredSvcRes, (value: any) => setFeaturedServices(value || []));
+    settle('courses', allCoursesRes, (value: any) => setAllCourses(value || []));
+    settle('featuredCourses', featuredCoursesRes, (value: any) => setFeaturedCourses(value || []));
+
+    setLoadErrors(failed);
+    setLoading(false);
   };
+
+  // Reload (Retry button, after saves).
+  const fetchData = async () => {
+    setLoading(true);
+    applyData(await loadData());
+  };
+
+  useLoadOnMount(loadData, applyData);
+
+  const heroLoadFailed = loadErrors.includes('hero');
+  const servicesLoadFailed = loadErrors.includes('services') || loadErrors.includes('featuredServices');
+  const coursesLoadFailed = loadErrors.includes('courses') || loadErrors.includes('featuredCourses');
+  const aboutLoadFailed = loadErrors.includes('settings') || loadErrors.includes('funFacts');
 
   // --- Hero Slide Handlers ---
   const handleEditHero = (slide: any) => {
@@ -64,18 +103,20 @@ export default function HomepageManager() {
   };
 
   const handleDeleteHero = async (slide: any) => {
-    if (confirm(`Are you sure you want to delete this slide?`)) {
+    if (await confirmAction(`Are you sure you want to delete this slide?`)) {
       try {
         await apiService.delete(`/hero_slides/${slide.id}`);
         setHeroSlides(heroSlides.filter(s => s.id !== slide.id));
       } catch (e) {
-        alert('Failed to delete slide');
+        notify('Failed to delete slide');
       }
     }
   };
 
   const handleSaveHero = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSavingHero) return;
+    setIsSavingHero(true);
     try {
       const payload = {
         ...currentHeroSlide,
@@ -85,15 +126,17 @@ export default function HomepageManager() {
       if (currentHeroSlide.id_exists) {
         await apiService.put(`/hero_slides/${currentHeroSlide.id}`, payload);
       } else {
-        payload.id = Date.now(); // fallback ID if needed
+        // hero_slides uses an auto-increment id assigned by the server.
         await apiService.post('/hero_slides', payload);
       }
-      
+
       fetchData();
       setIsEditingHero(false);
       setCurrentHeroSlide(null);
     } catch (e) {
-      alert('Failed to save hero slide');
+      notify('Failed to save hero slide');
+    } finally {
+      setIsSavingHero(false);
     }
   };
 
@@ -106,19 +149,25 @@ export default function HomepageManager() {
   // --- Other Settings Handlers ---
   const handleSaveOther = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSavingOther || loading || aboutLoadFailed) return;
     setIsSavingOther(true);
     try {
-      await apiService.put('/settings', settings);
-      
+      // Only send the fields this form edits; PUT /settings leaves every other key untouched.
+      await apiService.put('/settings', {
+        about_subtitle: settings.about_subtitle ?? '',
+        about_title: settings.about_title ?? '',
+        about_description: settings.about_description ?? '',
+      });
+
       for (const fact of funFacts) {
         if (fact.id) {
           await apiService.put(`/fun_facts/${fact.id}`, fact);
         }
       }
-      alert('About Us & Fun Facts saved successfully!');
+      notify('About Us & Fun Facts saved successfully!');
     } catch (err) {
       console.error(err);
-      alert('Failed to save data.');
+      notify('Failed to save data.');
     } finally {
       setIsSavingOther(false);
     }
@@ -133,7 +182,7 @@ export default function HomepageManager() {
   // --- Homepage Services Handlers ---
   const handleAddService = (serviceId: string) => {
     if (featuredServices.length >= 3) {
-      alert('Maximum of 3 services can be featured on the homepage.');
+      notify('Maximum of 3 services can be featured on the homepage.');
       return;
     }
     if (featuredServices.find(s => s.id === serviceId)) return;
@@ -156,16 +205,17 @@ export default function HomepageManager() {
   };
 
   const handleSaveServices = async () => {
+    if (isSavingServices || loading || servicesLoadFailed) return;
     if (featuredServices.length > 3) {
-      alert('Maximum of 3 services can be featured.');
+      notify('Maximum of 3 services can be featured.');
       return;
     }
     setIsSavingServices(true);
     try {
       await apiService.put('/homepage_services', { serviceIds: featuredServices.map(s => s.id) });
-      alert('Homepage Services saved successfully!');
+      notify('Homepage Services saved successfully!');
     } catch (err) {
-      alert('Failed to save homepage services.');
+      notify('Failed to save homepage services.');
     } finally {
       setIsSavingServices(false);
     }
@@ -174,7 +224,7 @@ export default function HomepageManager() {
   // --- Homepage Courses Handlers ---
   const handleAddCourse = (courseId: string) => {
     if (featuredCourses.length >= 3) {
-      alert('Maximum of 3 courses can be featured on the homepage.');
+      notify('Maximum of 3 courses can be featured on the homepage.');
       return;
     }
     if (featuredCourses.find(c => c.id === courseId)) return;
@@ -197,16 +247,17 @@ export default function HomepageManager() {
   };
 
   const handleSaveCourses = async () => {
+    if (isSavingCourses || loading || coursesLoadFailed) return;
     if (featuredCourses.length > 3) {
-      alert('Maximum of 3 courses can be featured.');
+      notify('Maximum of 3 courses can be featured.');
       return;
     }
     setIsSavingCourses(true);
     try {
       await apiService.put('/homepage_courses', { courseIds: featuredCourses.map(c => c.id) });
-      alert('Homepage Courses saved successfully!');
+      notify('Homepage Courses saved successfully!');
     } catch (err) {
-      alert('Failed to save homepage courses.');
+      notify('Failed to save homepage courses.');
     } finally {
       setIsSavingCourses(false);
     }
@@ -215,13 +266,25 @@ export default function HomepageManager() {
   return (
     <div>
       <h2 style={{ marginBottom: '25px', fontWeight: 700, color: '#2c3e50' }}>Homepage Content Management</h2>
-      
+
+      {!loading && loadErrors.length > 0 && (
+        <div style={{ marginBottom: '25px', padding: '16px 20px', borderRadius: '12px', background: 'rgba(220,53,69,0.1)', color: '#dc3545', border: '1px solid rgba(220,53,69,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', fontWeight: 500 }}>
+          <span>
+            <i className="fa fa-exclamation-circle" style={{ marginRight: '8px' }}></i>
+            Failed to load {loadErrors.map((key) => LOAD_LABELS[key]).join(', ')}. Saving the affected sections is disabled so existing data isn&apos;t overwritten.
+          </span>
+          <AdminButton type="button" variant="secondary" onClick={fetchData}>
+            <i className="fa fa-refresh" style={{ marginRight: '6px' }}></i> Retry
+          </AdminButton>
+        </div>
+      )}
+
       {/* --- HERO SLIDER MANAGEMENT --- */}
       <div style={{ background: '#fff', padding: '30px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', marginBottom: '30px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <h4 style={{ margin: 0, color: '#8D18D0' }}>Hero Slider</h4>
           {!isEditingHero && (
-            <AdminButton onClick={() => { setCurrentHeroSlide({ id_exists: false }); setIsEditingHero(true); }}>
+            <AdminButton disabled={loading || heroLoadFailed} onClick={() => { setCurrentHeroSlide({ id_exists: false }); setIsEditingHero(true); }}>
               <i className="fa fa-plus"></i> Add New Slide
             </AdminButton>
           )}
@@ -284,7 +347,7 @@ export default function HomepageManager() {
                 />
               </div>
               <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-                <AdminButton type="submit">Save Slide</AdminButton>
+                <AdminButton type="submit" loading={isSavingHero}>{isSavingHero ? 'Saving...' : 'Save Slide'}</AdminButton>
                 <button type="button" onClick={() => { setIsEditingHero(false); setCurrentHeroSlide(null); }} className="btn btn-secondary">Cancel</button>
               </div>
             </form>
@@ -336,7 +399,7 @@ export default function HomepageManager() {
         </div>
         
         <div style={{ marginTop: '20px' }}>
-          <AdminButton onClick={handleSaveServices} disabled={isSavingServices || featuredServices.length > 3}>
+          <AdminButton onClick={handleSaveServices} disabled={isSavingServices || loading || servicesLoadFailed || featuredServices.length > 3}>
             {isSavingServices ? 'Saving...' : 'Save Featured Services'}
           </AdminButton>
         </div>
@@ -354,7 +417,7 @@ export default function HomepageManager() {
             {featuredCourses.map((crs, index) => (
               <div key={crs.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '15px', background: '#f8f9fa', borderRadius: '8px', marginBottom: '10px', border: '1px solid #e9ecef' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                  <img src={resolveImageUrl(crs.image_url, '/assets/images/course-default.jpg')} alt="course" style={{ width: 40, height: 40, borderRadius: 4, objectFit: 'cover' }} />
+                  <img src={resolveImageUrl(crs.image_url, '/assets/images/cover-object.png')} alt="course" style={{ width: 40, height: 40, borderRadius: 4, objectFit: 'cover' }} />
                   <div>
                     <strong>{crs.title}</strong>
                     <div style={{ fontSize: '0.8rem', color: '#777' }}>Order: {index + 1}</div>
@@ -375,7 +438,7 @@ export default function HomepageManager() {
               {allCourses.filter(c => !featuredCourses.find(fc => fc.id === c.id)).map(crs => (
                 <div key={crs.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 15px', borderBottom: '1px solid #eee' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <img src={resolveImageUrl(crs.image_url, '/assets/images/course-default.jpg')} alt="course" style={{ width: 30, height: 30, borderRadius: 4, objectFit: 'cover' }} />
+                    <img src={resolveImageUrl(crs.image_url, '/assets/images/cover-object.png')} alt="course" style={{ width: 30, height: 30, borderRadius: 4, objectFit: 'cover' }} />
                     <span>{crs.title}</span>
                   </div>
                   <button type="button" onClick={() => handleAddCourse(crs.id)} disabled={featuredCourses.length >= 3} style={{ background: featuredCourses.length >= 3 ? '#eee' : '#e0f2f1', color: featuredCourses.length >= 3 ? '#999' : '#00897b', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: featuredCourses.length >= 3 ? 'not-allowed' : 'pointer', fontSize: '0.85rem' }}>Select</button>
@@ -386,7 +449,7 @@ export default function HomepageManager() {
         </div>
         
         <div style={{ marginTop: '20px' }}>
-          <AdminButton onClick={handleSaveCourses} disabled={isSavingCourses || featuredCourses.length > 3}>
+          <AdminButton onClick={handleSaveCourses} disabled={isSavingCourses || loading || coursesLoadFailed || featuredCourses.length > 3}>
             {isSavingCourses ? 'Saving...' : 'Save Featured Courses'}
           </AdminButton>
         </div>
@@ -427,7 +490,7 @@ export default function HomepageManager() {
           </div>
 
           <div style={{ marginTop: '30px' }}>
-            <AdminButton type="submit" disabled={isSavingOther}>
+            <AdminButton type="submit" disabled={isSavingOther || loading || aboutLoadFailed}>
               {isSavingOther ? 'Saving...' : 'Save About Us & Facts'}
             </AdminButton>
           </div>

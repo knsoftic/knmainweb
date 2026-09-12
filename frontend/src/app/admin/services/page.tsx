@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { AdminTable } from '../../../components/common/admin-table';
 import { AdminButton, AdminInput, AdminTextarea, AdminImageUpload } from '../../../components/common/admin-form-elements';
 import { apiService } from '../../../services/api';
+import { useLoadOnMount } from '../../../utils/use-load-on-mount';
 import { resolveImageUrl } from '../../../utils/image-url';
 import CreatableSelect from 'react-select/creatable';
+import { confirmAction, notify } from '../../../components/common/admin-feedback';
 
 export default function ServicesManager() {
   const [services, setServices] = useState<any[]>([]);
@@ -13,31 +15,38 @@ export default function ServicesManager() {
   const [isEditing, setIsEditing] = useState(false);
   const [currentService, setCurrentService] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    fetchServices();
-    fetchCategories();
-  }, []);
+  const loadServices = async () => {
+    const data = await apiService.get('/services');
+    return data || [];
+  };
 
   const fetchServices = async () => {
     setLoading(true);
     try {
-      const data = await apiService.get('/services');
-      setServices(data || []);
+      setServices(await loadServices());
     } catch (e) {
       console.error(e);
     }
     setLoading(false);
   };
 
+  const loadCategories = async () => {
+    const data = await apiService.get('/service-categories');
+    return data || [];
+  };
+
   const fetchCategories = async () => {
     try {
-      const data = await apiService.get('/service-categories');
-      setCategories(data || []);
+      setCategories(await loadCategories());
     } catch (e) {
       console.error(e);
     }
   };
+
+  useLoadOnMount(loadServices, setServices, { onSettled: () => setLoading(false) });
+  useLoadOnMount(loadCategories, setCategories);
 
   const columns = [
     { key: 'title', label: 'Service Title' },
@@ -52,21 +61,27 @@ export default function ServicesManager() {
   };
 
   const handleDelete = async (item: any) => {
-    if (confirm(`Are you sure you want to delete ${item.title}?`)) {
+    if (await confirmAction(`Are you sure you want to delete ${item.title}?`)) {
       try {
         await apiService.delete(`/services/${item.id}`);
         setServices(services.filter(s => s.id !== item.id));
       } catch (e) {
-        alert('Failed to delete');
+        notify('Failed to delete');
       }
     }
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
+    if (!currentService.category_id) {
+      notify('Please select a service category.');
+      return;
+    }
+    setSaving(true);
     try {
-      let finalCategoryId = currentService.category_id || 'web_development';
-      
+      let finalCategoryId = currentService.category_id;
+
       // If the user created a new category on the fly (it doesn't have an ID in our predefined list)
       if (currentService.isNewCategory) {
         const filterSlug = finalCategoryId.toLowerCase().replace(/[^a-z0-9]+/g, '_');
@@ -98,7 +113,9 @@ export default function ServicesManager() {
       setIsEditing(false);
       setCurrentService(null);
     } catch (e) {
-      alert('Failed to save service');
+      notify('Failed to save service');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -107,7 +124,7 @@ export default function ServicesManager() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
         <h2 style={{ margin: 0, fontWeight: 700, color: '#2c3e50' }}>Services Management</h2>
         {!isEditing && (
-          <AdminButton onClick={() => { setCurrentService({ id_exists: false, category_id: 1 }); setIsEditing(true); }}>
+          <AdminButton onClick={() => { setCurrentService({ id_exists: false, category_id: categories[0]?.id ?? '' }); setIsEditing(true); }}>
             <i className="fa fa-plus"></i> Add New Service
           </AdminButton>
         )}
@@ -215,7 +232,7 @@ export default function ServicesManager() {
               onChange={(e) => setCurrentService({...currentService, features: e.target.value})} 
             />
             <div style={{ display: 'flex', gap: '15px', marginTop: '20px' }}>
-              <AdminButton type="submit">Save Service</AdminButton>
+              <AdminButton type="submit" loading={saving}>{saving ? 'Saving...' : 'Save Service'}</AdminButton>
               <AdminButton type="button" variant="secondary" onClick={() => setIsEditing(false)}>Cancel</AdminButton>
             </div>
           </form>

@@ -1,8 +1,9 @@
 "use client";
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { apiService } from '../../../services/api';
+import { useLoadOnMount } from '../../../utils/use-load-on-mount';
 
 const backBtn: React.CSSProperties = {
   display: 'inline-flex', alignItems: 'center', gap: '6px',
@@ -22,32 +23,26 @@ export default function BlogDashboard() {
   });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchStats();
-  }, []);
+  const loadStats = async () => {
+    const posts = await apiService.get('/blog/posts');
+    const categories = await apiService.get('/blog/categories');
+    const tags = await apiService.get('/blog/tags');
+    const comments = await apiService.get('/blog/comments');
 
-  const fetchStats = async () => {
-    setLoading(true);
-    try {
-      const posts = await apiService.get('/blog/posts');
-      const categories = await apiService.get('/blog/categories');
-      const tags = await apiService.get('/blog/tags');
-      const comments = await apiService.get('/blog/comments');
-
-      setStats({
-        totalPosts: posts.length || 0,
-        publishedPosts: posts.filter((p: any) => p.status === 'published').length || 0,
-        draftPosts: posts.filter((p: any) => p.status === 'draft').length || 0,
-        categories: categories.length || 0,
-        tags: tags.length || 0,
-        comments: comments.length || 0,
-      });
-    } catch (err) {
-      console.error('Failed to load blog stats', err);
-    } finally {
-      setLoading(false);
-    }
+    return {
+      totalPosts: posts.length || 0,
+      publishedPosts: posts.filter((p: any) => p.status === 'published').length || 0,
+      draftPosts: posts.filter((p: any) => p.status === 'draft').length || 0,
+      categories: categories.length || 0,
+      tags: tags.length || 0,
+      comments: comments.length || 0,
+    };
   };
+
+  useLoadOnMount(loadStats, setStats, {
+    onError: (err) => console.error('Failed to load blog stats', err),
+    onSettled: () => setLoading(false),
+  });
 
   const statCard = (title: string, value: number | string, icon: string, linkHref: string, bgColor: string, lightBg: string) => (
     <Link href={linkHref} style={{ textDecoration: 'none', display: 'block' }}>

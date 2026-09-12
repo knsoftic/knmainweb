@@ -1,3 +1,6 @@
+import Link from 'next/link';
+import { SplitWords } from './split-words';
+
 type BreadcrumbItem = {
   label: string;
   href?: string;
@@ -9,8 +12,22 @@ type PageHeroProps = {
   title: string;
   description: string;
   breadcrumbs: BreadcrumbItem[];
+  /** Extra classes for the section (e.g. a taller variant). */
   minHeightClassName?: string;
+  children?: React.ReactNode;
 };
+
+/** Shared animated background for the inner-page banners (also used by the blog post header). */
+export function PageHeroBackground() {
+  return (
+    <div className="ks-page-hero__bg" aria-hidden="true">
+      <span className="ks-blob ks-blob--1"></span>
+      <span className="ks-blob ks-blob--2"></span>
+      <span className="ks-page-hero__rings"><i></i></span>
+      <span className="ks-grain"></span>
+    </div>
+  );
+}
 
 export function PageHero({
   badge,
@@ -18,39 +35,32 @@ export function PageHero({
   description,
   breadcrumbs,
   minHeightClassName,
+  children,
 }: PageHeroProps) {
   return (
-    <section className={`premium-hero-section d-flex align-items-center${minHeightClassName ? ` ${minHeightClassName}` : ''}`} id="top">
-      <div className="container position-relative z-index-2">
-        <div className="tab-content" id="heroTabContent">
-          <div className="tab-pane fade show active" id="slide-1" role="tabpanel" aria-labelledby="slide-1-tab">
-            <div className="row align-items-center gy-5">
-              <div className="col-lg-12 text-center">
-                <div className="hero-badge mb-4">
-                  <span className="badge-dot"></span> {badge}
-                </div>
-                <h1 className="hero-title mb-3">{title}</h1>
-                <p className="hero-description mb-5 text-center" style={{ margin: 'auto' }}>
-                  {description}
-                </p>
-                <nav aria-label="breadcrumb" className="d-flex justify-content-center">
-                  <ol className="breadcrumb mb-0 justify-content-center">
-                    {breadcrumbs.map((crumb, index) => (
-                      <li key={`${crumb.label}-${index}`} className={`breadcrumb-item${crumb.active ? ' active fw-semibold text-white' : ''}`} aria-current={crumb.active ? 'page' : undefined}>
-                        {crumb.href ? (
-                          <a href={crumb.href} className="text-decoration-none text-muted-custom transition-all">
-                            {crumb.label}
-                          </a>
-                        ) : (
-                          crumb.label
-                        )}
-                      </li>
-                    ))}
-                  </ol>
-                </nav>
-              </div>
-            </div>
-          </div>
+    <section className={`ks-page-hero${minHeightClassName ? ` ${minHeightClassName}` : ''}`} id="top">
+      <PageHeroBackground />
+      <div className="ks-container">
+        <div className="ks-page-hero__inner">
+          <nav aria-label="Breadcrumb">
+            <ol className="ks-crumbs">
+              {breadcrumbs.map((crumb, index) => (
+                <li key={`${crumb.label}-${index}`}>
+                  {crumb.href && !crumb.active ? (
+                    <Link href={crumb.href}>{crumb.label}</Link>
+                  ) : (
+                    <span aria-current={crumb.active ? 'page' : undefined}>{crumb.label}</span>
+                  )}
+                </li>
+              ))}
+            </ol>
+          </nav>
+          <span className="ks-badge">
+            <span className="ks-badge__dot" aria-hidden="true"></span> {badge}
+          </span>
+          <h1 className="ks-display ks-page-hero__title"><SplitWords text={title} /></h1>
+          {description && <p className="ks-page-hero__desc">{description}</p>}
+          {children}
         </div>
       </div>
     </section>

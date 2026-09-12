@@ -3,6 +3,23 @@
 import Link from 'next/link';
 import { getEnabledSocialLinks, getSetting } from '../../utils/settings';
 import { resolveImageUrl } from '../../utils/image-url';
+import { getWhatsappNumber } from './site-settings';
+
+const quickLinks = [
+  { label: 'Home', href: '/' },
+  { label: 'Services', href: '/services' },
+  { label: 'Projects', href: '/projects' },
+  { label: 'About Us', href: '/about' },
+  { label: 'Contact', href: '/contact' },
+];
+
+const serviceLinks = [
+  { label: 'Web Development', href: '/services' },
+  { label: 'Mobile Apps', href: '/services' },
+  { label: 'UI/UX Design', href: '/services' },
+  { label: 'IT Courses', href: '/courses' },
+  { label: 'Tech Blog', href: '/blog' },
+];
 
 export function SiteFooter({ settings }: { settings?: any }) {
   const socialLinks = getEnabledSocialLinks(settings);
@@ -11,101 +28,103 @@ export function SiteFooter({ settings }: { settings?: any }) {
   const address = getSetting(settings, ['contact_address', 'office_address', 'company_address'], 'Faisalabad, Pakistan');
   const phone = getSetting(settings, ['contact_phone', 'phone_number'], '+92 345 2470250');
   const email = getSetting(settings, ['contact_email', 'primary_email'], 'info@knsoftic.com');
+  const logoUrl = settings?.light_logo_url || settings?.logo_url;
 
   return (
-    <footer className="premium-footer">
-      <div className="container">
-        <div className="row">
-          
-          {/* Column 1: Brand Info */}
-          <div className="col-lg-4 col-md-6 col-12 footer-widget">
-            <div className="footer-logo-wrapper" style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
-              {(settings?.light_logo_url || settings?.logo_url) ? (
-                <img
-                  src={resolveImageUrl(settings?.light_logo_url || settings?.logo_url)}
-                  alt={companyName}
-                  className="footer-logo-img"
-                  style={{ width: '220px', height: 'auto', objectFit: 'contain' }}
-                />
+    <footer className="ks-footer">
+      <div className="ks-container">
+        <div className="ks-footer__cta" data-reveal="stagger">
+          <div>
+            <p className="ks-eyebrow ks-eyebrow--light">Let&apos;s work together</p>
+            <h2 className="ks-footer__cta-title">Have a project in mind or want to learn a new skill?</h2>
+          </div>
+          <div className="ks-footer__cta-actions">
+            <Link href="/contact" className="ks-btn ks-btn--light">
+              Start a Project <i className="fa fa-arrow-right" aria-hidden="true"></i>
+            </Link>
+            <a
+              href={`https://wa.me/${getWhatsappNumber(settings)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ks-btn ks-btn--ghost"
+            >
+              <i className="fab fa-whatsapp" aria-hidden="true"></i> WhatsApp Us
+            </a>
+          </div>
+        </div>
+
+        <div className="ks-footer__grid" data-reveal="stagger">
+          <div>
+            <Link href="/" className="ks-footer__logo" aria-label={`${companyName} home`}>
+              {logoUrl ? (
+                <img src={resolveImageUrl(logoUrl)} alt={companyName} />
               ) : (
-                <h3 style={{ margin: 0, fontWeight: '700', fontSize: '1.5rem', color: '#fff', fontFamily: "'Conthrax', 'Inter', sans-serif", textTransform: 'uppercase' }}>{companyName}</h3>
+                <span className="ks-footer__logo-text">{companyName}</span>
               )}
-            </div>
-            <p className="footer-desc">
+            </Link>
+            <p className="ks-footer__desc">
               {tagline}. We bring your digital visions to life through cutting-edge development and striking visual identity.
             </p>
             {socialLinks.length > 0 && (
-              <div className="footer-social-cluster">
+              <div className="ks-socials">
                 {socialLinks.map((link) => (
                   <a
                     key={`${link.platform}-${link.url}`}
                     href={link.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`social-badge social-badge-${link.platform?.toLowerCase() || 'unknown'}`}
-                    aria-label={`Visit our ${link.platform}`}
+                    className={`social-badge-${link.platform?.toLowerCase() || 'unknown'}`}
+                    aria-label={`Visit our ${link.label || link.platform}`}
                   >
-                    <i className={link.icon || 'fa fa-link'}></i>
+                    <i className={link.icon || 'fa fa-link'} aria-hidden="true"></i>
                   </a>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Column 2: Quick Links */}
-          <div className="col-lg-2 col-md-6 col-12 footer-widget offset-lg-1">
-            <h4>Quick Links</h4>
-            <ul className="footer-links">
-              <li><Link href="/"><i className="bi bi-chevron-right me-2"></i>Home</Link></li>
-              <li><Link href="/services"><i className="bi bi-chevron-right me-2"></i>Services</Link></li>
-              <li><Link href="/projects"><i className="bi bi-chevron-right me-2"></i>Projects</Link></li>
-              <li><Link href="/about"><i className="bi bi-chevron-right me-2"></i>About Us</Link></li>
-              <li><Link href="/contact"><i className="bi bi-chevron-right me-2"></i>Contact</Link></li>
+          <div>
+            <h3 className="ks-footer__heading">Quick Links</h3>
+            <ul className="ks-footer__links">
+              {quickLinks.map((link) => (
+                <li key={link.label}><Link href={link.href}>{link.label}</Link></li>
+              ))}
             </ul>
           </div>
 
-          {/* Column 3: Services Links (Optional extra column) */}
-          <div className="col-lg-2 col-md-6 col-12 footer-widget">
-            <h4>Our Services</h4>
-            <ul className="footer-links">
-              <li><Link href="/services"><i className="bi bi-chevron-right me-2"></i>Web Development</Link></li>
-              <li><Link href="/services"><i className="bi bi-chevron-right me-2"></i>Mobile Apps</Link></li>
-              <li><Link href="/services"><i className="bi bi-chevron-right me-2"></i>UI/UX Design</Link></li>
-              <li><Link href="/courses"><i className="bi bi-chevron-right me-2"></i>IT Courses</Link></li>
-              <li><Link href="/blog"><i className="bi bi-chevron-right me-2"></i>Tech Blog</Link></li>
+          <div>
+            <h3 className="ks-footer__heading">Our Services</h3>
+            <ul className="ks-footer__links">
+              {serviceLinks.map((link) => (
+                <li key={link.label}><Link href={link.href}>{link.label}</Link></li>
+              ))}
             </ul>
           </div>
 
-          {/* Column 4: Contact Info */}
-          <div className="col-lg-3 col-md-6 col-12 footer-widget">
-            <h4>Contact Us</h4>
-            <ul className="footer-contact-info">
+          <div>
+            <h3 className="ks-footer__heading">Contact Us</h3>
+            <ul className="ks-footer__contact">
               <li>
-                <i className="bi bi-geo-alt"></i>
+                <i className="bi bi-geo-alt" aria-hidden="true"></i>
                 <span>{address}</span>
               </li>
               <li>
-                <i className="bi bi-telephone"></i>
-                <span>{phone}</span>
+                <i className="bi bi-telephone" aria-hidden="true"></i>
+                <a href={`tel:${phone.replace(/[^\d+]/g, '')}`}>{phone}</a>
               </li>
               <li>
-                <i className="bi bi-envelope"></i>
-                <a href={`mailto:${email}`} style={{color: 'inherit', textDecoration: 'none'}}>{email}</a>
+                <i className="bi bi-envelope" aria-hidden="true"></i>
+                <a href={`mailto:${email}`}>{email}</a>
               </li>
             </ul>
           </div>
-
         </div>
 
-        {/* Bottom Bar */}
-        <div className="footer-bottom-bar">
-          <p className="footer-copyright">
-            {getSetting(settings, ['copyright_text'], `© ${new Date().getFullYear()} ${companyName}. All rights reserved.`)}
-          </p>
-          <div className="footer-bottom-links" style={{display:'flex', gap:'24px', fontSize:'0.8rem'}}>
-            <Link href="/about" style={{color:'rgba(255,255,255,0.45)', textDecoration:'none', letterSpacing:'0.02em', transition:'color 0.2s'}}>Privacy Policy</Link>
-            <Link href="/contact" style={{color:'rgba(255,255,255,0.45)', textDecoration:'none', letterSpacing:'0.02em', transition:'color 0.2s'}}>Terms of Service</Link>
-          </div>
+        <div className="ks-footer__bottom">
+          <span>{getSetting(settings, ['copyright_text'], `© ${new Date().getFullYear()} ${companyName}. All rights reserved.`)}</span>
+          <span>
+            <Link href="/about">About</Link> · <Link href="/blog">Blog</Link> · <Link href="/contact">Contact</Link>
+          </span>
         </div>
       </div>
     </footer>

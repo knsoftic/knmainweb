@@ -1,31 +1,36 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { AdminTable } from '../../../../components/common/admin-table';
 import { AdminButton, AdminInput } from '../../../../components/common/admin-form-elements';
 import { apiService } from '../../../../services/api';
+import { useLoadOnMount } from '../../../../utils/use-load-on-mount';
+import { confirmAction, notify } from '../../../../components/common/admin-feedback';
 
 export default function BlogTagsManager() {
   const [tags, setTags] = useState<any[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [currentTag, setCurrentTag] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    fetchTags();
-  }, []);
+  const loadTags = async () => {
+    const data = await apiService.get('/blog/tags');
+    return data || [];
+  };
 
   const fetchTags = async () => {
     setLoading(true);
     try {
-      const data = await apiService.get('/blog/tags');
-      setTags(data || []);
+      setTags(await loadTags());
     } catch (e) {
       console.error(e);
     }
     setLoading(false);
   };
+
+  useLoadOnMount(loadTags, setTags, { onSettled: () => setLoading(false) });
 
   const columns = [
     { key: 'name', label: 'Tag Name' },
@@ -39,18 +44,20 @@ export default function BlogTagsManager() {
   };
 
   const handleDelete = async (item: any) => {
-    if (confirm(`Are you sure you want to delete tag "${item.name}"?`)) {
+    if (await confirmAction(`Are you sure you want to delete tag "${item.name}"?`)) {
       try {
         await apiService.delete(`/blog/tags/${item.id}`);
         setTags(tags.filter(t => t.id !== item.id));
       } catch (e) {
-        alert('Failed to delete tag');
+        notify('Failed to delete tag');
       }
     }
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
+    setSaving(true);
     try {
       const slug = currentTag.slug || currentTag.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
       const payload = {
@@ -67,7 +74,9 @@ export default function BlogTagsManager() {
       setIsEditing(false);
       setCurrentTag(null);
     } catch (e) {
-      alert('Failed to save tag');
+      notify('Failed to save tag');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -110,7 +119,7 @@ export default function BlogTagsManager() {
             />
 
             <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-              <AdminButton type="submit">Save Tag</AdminButton>
+              <AdminButton type="submit" loading={saving}>{saving ? 'Saving...' : 'Save Tag'}</AdminButton>
               <AdminButton type="button" variant="secondary" onClick={() => setIsEditing(false)}>Cancel</AdminButton>
             </div>
           </form>

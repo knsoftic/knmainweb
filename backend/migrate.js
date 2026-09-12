@@ -407,6 +407,144 @@ const ensureHomepageTables = async () => {
   `);
 };
 
+const ensureCommentStaffFlag = async () => {
+  // Older databases (and the packaged schema before this fix) had no parent_id, which the
+  // replies below and the blog API both rely on.
+  if (!(await columnExists('blog_comments', 'parent_id'))) {
+    await db.query('ALTER TABLE blog_comments ADD COLUMN parent_id int(11) DEFAULT NULL AFTER post_id');
+    await db.query('ALTER TABLE blog_comments ADD KEY (parent_id)');
+  }
+
+  if (await columnExists('blog_comments', 'is_staff')) return;
+
+  // Only replies flagged here get the "Author" badge; visitors can no longer post official-looking replies.
+  await db.query(`ALTER TABLE blog_comments ADD COLUMN is_staff tinyint(1) NOT NULL DEFAULT 0 AFTER status`);
+
+  // Replies already written from the admin panel used an admin account's email; keep their badge.
+  if (await tableExists('admin_users')) {
+    const admins = await db.query('SELECT email FROM admin_users');
+    const adminEmails = new Set(admins.map((a) => String(a.email || '').trim().toLowerCase()).filter(Boolean));
+    const replies = await db.query('SELECT id, email FROM blog_comments WHERE parent_id IS NOT NULL');
+    const staffIds = replies.filter((r) => adminEmails.has(String(r.email || '').trim().toLowerCase())).map((r) => r.id);
+    for (const id of staffIds) {
+      await db.query('UPDATE blog_comments SET is_staff = 1 WHERE id = ?', [id]);
+    }
+    console.log(`Marked ${staffIds.length} existing admin repl${staffIds.length === 1 ? 'y' : 'ies'} as staff.`);
+  }
+};
+
+const ensureTokenVersion = async () => {
+  // Bumped on password change so older sessions stop working.
+  if ((await tableExists('admin_users')) && !(await columnExists('admin_users', 'token_version'))) {
+    await db.query(`ALTER TABLE admin_users ADD COLUMN token_version int(11) NOT NULL DEFAULT 0`);
+  }
+};
+
+const trimBlogSlugs = async () => {
+  // A slug saved with surrounding whitespace produced URLs like /blog/%20my-post.
+  const posts = await db.query('SELECT id, slug FROM blog_posts');
+  for (const post of posts) {
+    const current = String(post.slug || '');
+    const trimmed = current.trim();
+    if (!trimmed || trimmed === current) continue;
+
+    const taken = await db.query('SELECT id FROM blog_posts WHERE slug = ? AND id <> ?', [trimmed, post.id]);
+    const slug = taken.length > 0 ? `${trimmed}-${post.id}` : trimmed;
+    await db.query('UPDATE blog_posts SET slug = ?, updated_at = updated_at WHERE id = ?', [slug, post.id]);
+    console.log(`Fixed blog slug for post ${post.id}: "${current}" -> "${slug}"`);
+  }
+};
+
+const repairHeroSlideIds = async () => {
+  if (!(await tableExists('hero_slides'))) return;
+
+  // Slides created with a millisecond timestamp as their id were clamped to the INT maximum,
+  // which makes every later insert collide with that row.
+  const INT_MAX = 2147483647;
+  const overflow = await db.query('SELECT id FROM hero_slides WHERE id = ?', [INT_MAX]);
+  if (overflow.length > 0) {
+    const [{ maxId }] = await db.query('SELECT COALESCE(MAX(id), 0) AS maxId FROM hero_slides WHERE id < ?', [INT_MAX]);
+    await db.query('UPDATE hero_slides SET id = ? WHERE id = ?', [Number(maxId) + 1, INT_MAX]);
+    console.log(`Renumbered hero slide ${INT_MAX} to ${Number(maxId) + 1}.`);
+  }
+
+  const [{ counter }] = await db.query(
+    `SELECT AUTO_INCREMENT AS counter FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'hero_slides'`
+  );
+  if (overflow.length > 0 || Number(counter) >= INT_MAX) {
+    const [{ nextId }] = await db.query('SELECT COALESCE(MAX(id), 0) + 1 AS nextId FROM hero_slides');
+    await db.query(`ALTER TABLE hero_slides AUTO_INCREMENT = ${Number(nextId)}`);
+  }
+};
+
+// One-time data changes are recorded here so a later `npm run migrate` never re-applies them
+// (e.g. after an admin deliberately changed the data back).
+const runOnce = async (name, work) => {
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS app_migrations (
+      name varchar(100) NOT NULL,
+      ran_at timestamp NULL DEFAULT current_timestamp(),
+      PRIMARY KEY (name)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+  const done = await db.query('SELECT name FROM app_migrations WHERE name = ?', [name]);
+  if (done.length > 0) return;
+  await work();
+  await db.query('INSERT INTO app_migrations (name) VALUES (?)', [name]);
+};
+
+const hideTemplateHomepageCards = async () => {
+  if (!(await tableExists('homepage_cards'))) return;
+
+  // The homepage didn't render these cards before, so the three template cards were never public.
+  // Hide them if still untouched rather than publishing placeholder text; re-enable in Admin → Homepage Cards.
+  const result = await db.query(`
+    UPDATE homepage_cards SET is_active = 0
+    WHERE is_active = 1
+      AND id IN ('card1', 'card2', 'card3')
+      AND title IN ('Expert Craftsmanship', 'Cloud Infrastructure', 'Strategic Growth')
+      AND (read_more_url IS NULL OR read_more_url IN ('', '#'))
+  `);
+  if (result.affectedRows) {
+    console.log(`Hid ${result.affectedRows} template homepage card(s); edit and re-enable them in Admin → Homepage Cards.`);
+  }
+};
+
+// Fields the admin forms treat as optional. Under strict SQL mode (the MySQL/MariaDB default), a NOT NULL
+// column with no default makes any insert that leaves it out fail with "doesn't have a default value".
+const OPTIONAL_COLUMNS = {
+  hero_slides: ['badge_text', 'description', 'image_url'],
+  homepage_cards: ['description', 'image_url'],
+  services: ['icon', 'image_url', 'page_title', 'home_description'],
+  courses: ['image_url', 'duration', 'enroll_url'],
+  team_members: ['image_url', 'category'],
+  testimonials: ['category'],
+};
+
+const relaxOptionalColumns = async () => {
+  for (const [table, columns] of Object.entries(OPTIONAL_COLUMNS)) {
+    if (!(await tableExists(table))) continue;
+
+    for (const column of columns) {
+      const [info] = await db.query(
+        `SELECT COLUMN_TYPE AS columnType, DATA_TYPE AS dataType, IS_NULLABLE AS nullable, COLUMN_DEFAULT AS defaultValue,
+                CHARACTER_SET_NAME AS charset, COLLATION_NAME AS collation
+         FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?`,
+        [table, column]
+      );
+      if (!info || info.nullable === 'YES' || info.defaultValue !== null) continue;
+
+      // Keep the column's own charset/collation so joins and comparisons behave as before.
+      const charset = info.charset ? ` CHARACTER SET ${info.charset} COLLATE ${info.collation}` : '';
+      const definition = /text|blob/i.test(info.dataType)
+        ? `${info.columnType}${charset} NULL`
+        : `${info.columnType}${charset} NOT NULL DEFAULT ''`;
+      await db.query(`ALTER TABLE ${table} MODIFY ${column} ${definition}`);
+      console.log(`Made ${table}.${column} optional.`);
+    }
+  }
+};
+
 (async () => {
   try {
     console.log('Starting database migrations...');
@@ -416,6 +554,12 @@ const ensureHomepageTables = async () => {
     await ensureBlogStorage();
     await ensureSeoStorage();
     await ensureHomepageTables();
+    await ensureCommentStaffFlag();
+    await ensureTokenVersion();
+    await trimBlogSlugs();
+    await repairHeroSlideIds();
+    await relaxOptionalColumns();
+    await runOnce('hide-template-homepage-cards', hideTemplateHomepageCards);
     console.log('Database migrations completed successfully.');
     process.exit(0);
   } catch (err) {

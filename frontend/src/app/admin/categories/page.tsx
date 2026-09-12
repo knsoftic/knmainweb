@@ -1,30 +1,35 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { AdminTable } from '../../../components/common/admin-table';
 import { AdminButton, AdminInput } from '../../../components/common/admin-form-elements';
 import { apiService } from '../../../services/api';
+import { useLoadOnMount } from '../../../utils/use-load-on-mount';
+import { confirmAction, notify } from '../../../components/common/admin-feedback';
 
 export default function CategoriesManager() {
   const [categories, setCategories] = useState<any[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [currentCategory, setCurrentCategory] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    fetchCategories();
-  }, []);
+  const loadCategories = async () => {
+    const data = await apiService.get('/service-categories');
+    return data || [];
+  };
 
   const fetchCategories = async () => {
     setLoading(true);
     try {
-      const data = await apiService.get('/service-categories');
-      setCategories(data || []);
+      setCategories(await loadCategories());
     } catch (e) {
       console.error(e);
     }
     setLoading(false);
   };
+
+  useLoadOnMount(loadCategories, setCategories, { onSettled: () => setLoading(false) });
 
   const columns = [
     { key: 'name', label: 'Category Name' },
@@ -38,18 +43,20 @@ export default function CategoriesManager() {
   };
 
   const handleDelete = async (item: any) => {
-    if (confirm(`Are you sure you want to delete ${item.name}?`)) {
+    if (await confirmAction(`Are you sure you want to delete ${item.name}?`)) {
       try {
         await apiService.delete(`/service-categories/${item.id}`);
         setCategories(categories.filter(c => c.id !== item.id));
       } catch (e) {
-        alert('Failed to delete category');
+        notify('Failed to delete category');
       }
     }
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
+    setSaving(true);
     try {
       const payload = {
         ...currentCategory
@@ -72,7 +79,9 @@ export default function CategoriesManager() {
       setCurrentCategory(null);
     } catch (e: any) {
       console.error('Save category error:', e);
-      alert('Failed to save category: ' + (e?.message || 'Unknown error'));
+      notify('Failed to save category: ' + (e?.message || 'Unknown error'));
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -104,7 +113,7 @@ export default function CategoriesManager() {
             />
             
             <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-              <AdminButton type="submit">Save Category</AdminButton>
+              <AdminButton type="submit" loading={saving}>{saving ? 'Saving...' : 'Save Category'}</AdminButton>
               <button 
                 type="button" 
                 onClick={() => setIsEditing(false)}

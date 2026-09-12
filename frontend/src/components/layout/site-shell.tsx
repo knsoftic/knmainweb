@@ -1,16 +1,18 @@
 "use client";
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { SiteFooter } from './site-footer';
+import { MotionEffects } from './motion-effects';
 import { ContactWidget } from '../sections/contact-widget';
 import { resolveImageUrl } from '../../utils/image-url';
-import { apiService } from '../../services/api';
-import { getSetting } from '../../utils/settings';
+import { SiteSettingsProvider, getWhatsappNumber } from './site-settings';
 
 type SiteShellProps = {
   children: React.ReactNode;
+  /** Settings loaded on the server by the (site) layout; null if the API failed. */
+  initialSettings?: any;
 };
 
 const navItems = [
@@ -23,24 +25,47 @@ const navItems = [
   { label: 'Contact', href: '/contact' },
 ];
 
-export function SiteShell({ children }: SiteShellProps) {
+export function SiteShell({ children, initialSettings = null }: SiteShellProps) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const [showTop, setShowTop] = useState(false);
-  const [settings, setSettings] = useState<any>(null);
+  const [headerHidden, setHeaderHidden] = useState(false);
+  const lastScrollY = useRef(0);
+  const navPill = useRef<HTMLLIElement>(null);
+  const settings = initialSettings;
+  const logoUrl = settings?.light_logo_url || settings?.logo_url;
+  const siteName = settings?.site_name || 'KN Softic';
 
   useEffect(() => {
-    apiService.get('/settings')
-      .then(data => setSettings(data))
-      .catch(console.error);
-  }, []);
-
-  useEffect(() => {
-    const onScroll = () => setShowTop(window.scrollY > 300);
+    const onScroll = () => {
+      const y = window.scrollY;
+      setScrolled(y > 40);
+      setShowTop(y > 300);
+      // Hide the header while scrolling down past the hero, bring it back on any scroll up.
+      const delta = y - lastScrollY.current;
+      if (Math.abs(delta) > 8) {
+        setHeaderHidden(delta > 0 && y > 480);
+        lastScrollY.current = y;
+      }
+    };
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  // Glides the soft highlight behind the hovered nav link.
+  const showNavPill = (event: React.MouseEvent<HTMLAnchorElement> | React.FocusEvent<HTMLAnchorElement>) => {
+    const pill = navPill.current;
+    const item = event.currentTarget.parentElement;
+    if (!pill || !item) return;
+    pill.style.width = `${item.offsetWidth}px`;
+    pill.style.transform = `translateX(${item.offsetLeft}px)`;
+    pill.style.opacity = '1';
+  };
+  const hideNavPill = () => {
+    if (navPill.current) navPill.current.style.opacity = '0';
+  };
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -63,53 +88,80 @@ export function SiteShell({ children }: SiteShellProps) {
     };
   }, [pathname]);
 
-  return (
-    <>
-      {/* Preloader removed as per user request */}
+  const closeMenu = () => setMenuOpen(false);
 
-      <header className={`header-area header-sticky${showTop ? ' background-header' : ''}`}>
-        <div className="container">
-          <div className="row">
-            <div className="col-12">
-              <nav className="main-nav">
-                <Link href="/" className="logo" onClick={() => setMenuOpen(false)}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', whiteSpace: 'nowrap' }}>
-                    {settings?.light_logo_url || settings?.logo_url ? (
-                      <img
-                        src={resolveImageUrl(settings?.light_logo_url || settings?.logo_url)}
-                        alt={settings?.site_name || 'KN Softic'}
-                        style={{ height: '80px', width: 'auto', objectFit: 'contain', transition: 'all 0.3s ease' }}
-                      />
-                    ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.05 }}>
-                        <div style={{ whiteSpace: 'nowrap', fontFamily: "'Conthrax', 'Inter', sans-serif", fontSize: '1.5rem', margin: 0, fontWeight: 'bold', color: '#fff' }}>
-                          {settings?.site_name || 'KN Softic'}
-                        </div>
-                        <span style={{ fontSize: '0.8rem', opacity: 0.8, color: '#ffffff', letterSpacing: '0.02em', marginTop: '2px' }}>{settings?.website_tagline || 'Software House & IT Institute'}</span>
-                      </div>
-                    )}
-                  </div>
-                </Link>
-                <ul className={`nav${menuOpen ? ' open' : ''}`}>
-                  {navItems.map((item) => (
-                    <li key={item.label} className="scroll-to-section">
-                      <Link href={item.href} className={isActive(item.href) ? 'active' : ''} onClick={() => setMenuOpen(false)}>
-                        {item.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-                <button
-                  type="button"
-                  className={`menu-trigger${menuOpen ? ' active' : ''}`}
-                  onClick={() => setMenuOpen((value) => !value)}
-                  aria-label="Toggle menu"
-                >
-                  <span>Menu</span>
-                </button>
-              </nav>
-            </div>
+  return (
+    <SiteSettingsProvider settings={settings}>
+      <MotionEffects />
+      <span className="ks-scroll-progress" aria-hidden="true"></span>
+      <header className={`ks-header${scrolled || menuOpen ? ' is-scrolled' : ''}${headerHidden && !menuOpen ? ' is-hidden' : ''}`}>
+        <div className="ks-container ks-header__bar">
+          <Link href="/" className="ks-logo" onClick={closeMenu} aria-label={`${siteName} home`}>
+            {logoUrl ? (
+              <img src={resolveImageUrl(logoUrl)} alt={siteName} />
+            ) : (
+              <span className="ks-logo__text">
+                <span className="ks-logo__name">{siteName}</span>
+                <span className="ks-logo__tag">{settings?.website_tagline || 'Software House & IT Institute'}</span>
+              </span>
+            )}
+          </Link>
+
+          <nav aria-label="Main">
+            <ul className="ks-nav" onMouseLeave={hideNavPill}>
+              <li className="ks-nav__pill" ref={navPill} aria-hidden="true"></li>
+              {navItems.map((item) => (
+                <li key={item.label}>
+                  <Link
+                    href={item.href}
+                    className={isActive(item.href) ? 'is-active' : undefined}
+                    aria-current={isActive(item.href) ? 'page' : undefined}
+                    onMouseEnter={showNavPill}
+                    onFocus={showNavPill}
+                    onBlur={hideNavPill}
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          <div className="ks-header__actions">
+            <Link href="/contact" className="ks-btn ks-btn--light ks-header__cta">
+              Get a Quote <i className="fa fa-arrow-right" aria-hidden="true"></i>
+            </Link>
+            <button
+              type="button"
+              className="ks-burger"
+              onClick={() => setMenuOpen((value) => !value)}
+              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={menuOpen}
+              aria-controls="ks-mobile-menu"
+            >
+              <i className={menuOpen ? 'bi bi-x-lg' : 'bi bi-list'} aria-hidden="true"></i>
+            </button>
           </div>
+        </div>
+
+        <div id="ks-mobile-menu" className={`ks-mobile-menu${menuOpen ? ' is-open' : ''}`} aria-hidden={!menuOpen}>
+          <ul>
+            {navItems.map((item) => (
+              <li key={item.label}>
+                <Link
+                  href={item.href}
+                  className={`ks-mobile-link${isActive(item.href) ? ' is-active' : ''}`}
+                  onClick={closeMenu}
+                  tabIndex={menuOpen ? undefined : -1}
+                >
+                  {item.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <Link href="/contact" className="ks-btn ks-btn--primary ks-btn--block" onClick={closeMenu} tabIndex={menuOpen ? undefined : -1}>
+            Get a Quote <i className="fa fa-arrow-right" aria-hidden="true"></i>
+          </Link>
         </div>
       </header>
 
@@ -120,24 +172,25 @@ export function SiteShell({ children }: SiteShellProps) {
       <SiteFooter settings={settings} />
 
       <a
-        href={`https://wa.me/${(settings?.whatsapp_number || settings?.contact_phone || '923001234567').replace(/\D/g, '')}?text=Hello!%20I%20visited%20your%20website%20and%20want%20to%20inquire%20about%20your%20services.`}
-        className="whatsapp-float"
+        href={`https://wa.me/${getWhatsappNumber(settings)}?text=Hello!%20I%20visited%20your%20website%20and%20want%20to%20inquire%20about%20your%20services.`}
+        className="ks-fab ks-fab--whatsapp"
         target="_blank"
         rel="noopener noreferrer"
         title="Chat with us on WhatsApp"
+        aria-label="Chat with us on WhatsApp"
       >
-        <i className="fab fa-whatsapp whatsapp-icon" />
+        <i className="fab fa-whatsapp" aria-hidden="true" />
       </a>
 
       <button
-        id="backToTop"
-        className={`back-to-top${showTop ? ' show' : ''}`}
+        className={`ks-fab ks-fab--top${showTop ? ' is-visible' : ''}`}
         type="button"
         onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
         aria-label="Back to top"
+        tabIndex={showTop ? undefined : -1}
       >
-        <i className="fa fa-arrow-up" />
+        <i className="fa fa-arrow-up" aria-hidden="true" />
       </button>
-    </>
+    </SiteSettingsProvider>
   );
 }
