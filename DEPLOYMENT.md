@@ -147,7 +147,17 @@ sh deploy.sh
 You will see it install dependencies, run the database migrations, build the website, and restart.
 It takes a few minutes, mostly the build.
 
-**4. Check the site** — https://knsoftic.com, and the admin panel at /admin/login.
+**4. Check it worked**
+
+```bash
+cd ~/domains/knsoftic.com/knsoftic/backend && npm run check
+```
+
+This inspects the settings file, connects to the database, counts your content, tests the uploads
+folder and calls the live API — then prints `OK`, `WARN` or `FAIL` for each. It only reads, so it is
+safe to run at any time. See [Checking a deployment](#checking-a-deployment) below.
+
+Then open https://knsoftic.com and the admin panel at /admin/login.
 
 ---
 
@@ -246,6 +256,61 @@ After the first GitHub deployment, check each of these:
 | Admin: upload an image | Appears, and still loads after a refresh |
 | Contact form | Message arrives in Admin → Contact Messages |
 | https://knsoftic.com/sitemap.xml | Lists pages, posts and projects |
+
+---
+
+## Checking a deployment
+
+One command tells you whether the API is running, whether it can reach the database, and whether
+the website will be able to reach it:
+
+```bash
+cd ~/domains/knsoftic.com/knsoftic/backend && npm run check
+```
+
+It checks, in order:
+
+| Check | What a `FAIL` means |
+|---|---|
+| `.env` values | A setting is missing, or an example value was never replaced |
+| Database connection | `DB_USER`, `DB_PASSWORD` or `DB_NAME` is wrong |
+| Tables and row counts | The dump was never imported, or `npm run migrate` was not run |
+| Admin accounts | Nobody can sign in — run `npm run create-admin` |
+| Uploads folder | `UPLOAD_DIR` points somewhere wrong, or the folder is not writable |
+| API is running | The app is stopped, or the domain does not point at it |
+| `/api/settings` | The API is running but cannot read the database |
+| CORS | The website is blocked from calling the API — the site would look empty |
+| Content routes | Services, courses, projects, team and blog posts all return data |
+
+`WARN` lines are not errors: an empty table simply means there is nothing to show on that part of
+the site yet.
+
+Nothing is written or changed, so run it as often as you like. It exits with an error code when
+something is broken, which makes it usable at the end of a deployment script.
+
+If your API is on a different address, pass it:
+
+```bash
+npm run check -- https://api.example.com
+```
+
+### Checking by hand
+
+Without the script, these four are the important ones:
+
+```bash
+curl -I https://api.knsoftic.com/                     # the API is running
+curl https://api.knsoftic.com/api/settings            # it can read the database
+curl -H "Origin: https://knsoftic.com" -I https://api.knsoftic.com/api/settings | grep -i access-control
+curl -s https://knsoftic.com | grep -c "KN Softic"    # the website rendered with content
+```
+
+The third one must print an `access-control-allow-origin` line matching your site. If it is missing,
+the browser blocks every request and the site loads with its layout but no content — the most common
+symptom of a wrong `CORS_ORIGIN`.
+
+To watch the API's own log output, use hPanel → Node.js → the application's log, or `pm2 logs
+knsoftic-api` if you run it through PM2. Database connection errors appear there with a ❌.
 
 ---
 

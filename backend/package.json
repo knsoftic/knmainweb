@@ -10,7 +10,8 @@
     "migrate": "node migrate.js",
     "test": "node test/api.test.js && node test/migrate.test.js",
     "create-admin": "node create-admin.js",
-    "cleanup-course-categories": "node cleanup-course-categories.js"
+    "cleanup-course-categories": "node cleanup-course-categories.js",
+    "check": "node check-health.js"
   },
   "keywords": [],
   "author": "",

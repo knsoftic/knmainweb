@@ -60,4 +60,11 @@ else
   echo "    If the site does not update, press Restart in hPanel -> Node.js."
 fi
 
+# ----------------------------------------------------------- Checking
+# Reads only: confirms the database, the uploads folder and the live API all answer.
+echo "==> Checking the result"
+sleep 5
+cd "$ROOT/backend"
+npm run check || echo "   (see the FAIL lines above - the deployment itself finished)"
+
 echo "==> Done. Check https://knsoftic.com and https://knsoftic.com/admin/login"
