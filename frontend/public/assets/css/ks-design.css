@@ -2419,3 +2419,53 @@ html.ks-reveal-ready [data-reveal='stagger']:not([data-revealed]):not([data-reve
     padding-block: 7px;
   }
 }
+
+/* ----------------------------------------------------------------------- Large screens */
+
+/* The layout was capped at 1240px whatever the monitor, which left about 320px of empty margin
+   down each side of a 1920px screen and half a screen of nothing at 2560px. The shell grows in
+   steps instead, and the gutters, grid gaps and section spacing grow with it so the proportions
+   stay the same rather than a few cards stretching out alone.
+
+   Reading width is deliberately untouched: article text stays capped by .ks-article, and the hero
+   and section intros keep their own max-widths, so lines never become too long to follow. */
+
+@media (min-width: 1500px) {
+  :root {
+    --ks-container: 1360px;
+    --ks-gutter: 32px;
+  }
+
+  .ks-grid,
+  .ks-grid--2,
+  .ks-grid--4 { gap: 28px; }
+
+  .ks-split { gap: 72px; }
+}
+
+@media (min-width: 1800px) {
+  :root {
+    --ks-container: 1480px;
+    --ks-gutter: 40px;
+  }
+
+  .ks-grid,
+  .ks-grid--2,
+  .ks-grid--4 { gap: 32px; }
+
+  .ks-split { gap: 84px; }
+
+  /* Taller sections keep the same rhythm on a screen that shows much more at once. */
+  .ks-section { padding: 130px 0; }
+  .ks-section--tight { padding: 90px 0; }
+}
+
+@media (min-width: 2200px) {
+  :root {
+    --ks-container: 1560px;
+  }
+
+  /* Beyond this the shell stops growing: wider would start to hurt more than it helps. The hero
+     gets a floor so it still fills a very tall, very wide screen. */
+  .ks-hero { min-height: 780px; }
+}
