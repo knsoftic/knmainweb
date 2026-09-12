@@ -212,15 +212,15 @@ export function ContactPageClient({ pageSeo, courseNames }: ContactPageClientPro
                   <form onSubmit={handleSubmit} className="ks-form">
                     <div>
                       <label htmlFor="contact-name" className="ks-label">Full Name <span className="text-danger">*</span></label>
-                      <input type="text" id="contact-name" name="name" autoComplete="name" required value={formData.name} onChange={handleChange} className="ks-input" placeholder="e.g. Ali Khan" />
+                      <input type="text" id="contact-name" name="name" autoComplete="name" required value={formData.name} onChange={handleChange} className="ks-input" placeholder="e.g. Muhammad Sohaib" />
                     </div>
                     <div>
                       <label htmlFor="contact-email" className="ks-label">Email Address <span className="text-danger">*</span></label>
-                      <input type="email" inputMode="email" autoComplete="email" id="contact-email" name="email" required value={formData.email} onChange={handleChange} className="ks-input" placeholder="e.g. you@company.com" />
+                      <input type="email" inputMode="email" autoComplete="email" id="contact-email" name="email" required value={formData.email} onChange={handleChange} className="ks-input" placeholder="e.g. sohaibmuhammad429@gmail.com" />
                     </div>
                     <div>
                       <label htmlFor="contact-phone" className="ks-label">Phone / WhatsApp <span className="ks-meta">(optional)</span></label>
-                      <input type="tel" id="contact-phone" name="phone" autoComplete="tel" value={formData.phone} onChange={handleChange} className="ks-input" placeholder="+92 300 0000000" />
+                      <input type="tel" id="contact-phone" name="phone" autoComplete="tel" value={formData.phone} onChange={handleChange} className="ks-input" placeholder="e.g. +923094257950" />
                     </div>
                     <div>
                       <label htmlFor="cSubject" className="ks-label">Subject / Interest <span className="text-danger">*</span></label>
