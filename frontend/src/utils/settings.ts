@@ -134,6 +134,19 @@ export const toOpeningHours = (value?: string | null) => {
   return `${start}-${end} ${to24Hour(fromHour, fromMinute, fromMeridiem)}-${to24Hour(toHour, toMinute, toMeridiem)}`;
 };
 
+/** The one number the business answers on, wherever a phone number is shown or published. */
+export const PRIMARY_PHONE = '+92 345 2470250';
+
+/**
+ * The number to show anywhere on the site.
+ *
+ * Several settings fields can hold a phone number and they had drifted apart - the footer showed
+ * one, the structured data published another. Everything asks this for it now, so the visible
+ * number, the tel: link, the WhatsApp link and what search engines are told can never disagree.
+ */
+export const getPrimaryPhone = (settings: any) =>
+  getSetting(settings, ['contact_phone', 'whatsapp_number', 'customer_care_number', 'phone_number'], PRIMARY_PHONE);
+
 export const getSetting = (settings: any, keys: string[], fallback = '') => {
   for (const key of keys) {
     const value = settings?.[key];

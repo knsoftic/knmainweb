@@ -547,6 +547,28 @@ const tidyCourseText = async () => {
   }
 };
 
+const useOneMainPhoneNumber = async () => {
+  const rows = await db.query('SELECT * FROM settings WHERE id = 1');
+  const settings = rows[0];
+  if (!settings) return;
+
+  // The business answers on one number. The settings held a second, older landline in
+  // phone_number, which is what the structured data was publishing to Google while every page
+  // showed the mobile - a mismatch that weakens local search results. Bring them into line.
+  const MAIN = '+92 345 2470250';
+  const fields = ['contact_phone', 'whatsapp_number', 'customer_care_number', 'phone_number']
+    .filter((field) => field in settings)
+    .filter((field) => String(settings[field] || '').trim() !== MAIN);
+
+  if (!fields.length) return;
+
+  await db.query(
+    `UPDATE settings SET ${fields.map((field) => `${field} = ?`).join(', ')} WHERE id = 1`,
+    fields.map(() => MAIN)
+  );
+  console.log(`Set ${fields.join(', ')} to the main number ${MAIN}.`);
+};
+
 const hideTemplateHomepageCards = async () => {
   if (!(await tableExists('homepage_cards'))) return;
 
@@ -616,6 +638,7 @@ const relaxOptionalColumns = async () => {
     await runOnce('hide-template-homepage-cards', hideTemplateHomepageCards);
     await runOnce('fix-about-heading-grammar', fixAboutHeadingGrammar);
     await runOnce('tidy-course-text', tidyCourseText);
+    await runOnce('use-one-main-phone-number', useOneMainPhoneNumber);
     console.log('Database migrations completed successfully.');
     process.exit(0);
   } catch (err) {

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { apiService } from '../../services/api';
-import { getSetting } from '../../utils/settings';
+import { getPrimaryPhone, getSetting } from '../../utils/settings';
 import { getWhatsappNumber, useSiteSettings } from '../layout/site-settings';
 
 export function ContactWidget() {
@@ -19,7 +19,7 @@ export function ContactWidget() {
   const [statusMessage, setStatusMessage] = useState('');
   const [statusError, setStatusError] = useState('');
 
-  const phone = getSetting(settings, ['contact_phone', 'phone_number'], '+92 345 2470250');
+  const phone = getPrimaryPhone(settings);
   const email = getSetting(settings, ['contact_email', 'primary_email'], 'info@knsoftic.com');
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {

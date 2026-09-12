@@ -6,7 +6,7 @@ import { PageHero } from '../../../components/common/page-hero';
 import { SectionHeader } from '../../../components/common/section-header';
 import { getWhatsappNumber, useSiteSettings } from '../../../components/layout/site-settings';
 import { apiService } from '../../../services/api';
-import { getEnabledSocialLinks, getSetting } from '../../../utils/settings';
+import { getPrimaryPhone, getRealSocialLinks, getSetting } from '../../../utils/settings';
 import { revealDelay } from '../../../utils/reveal';
 
 const DEFAULT_CONTACT = {
@@ -73,12 +73,12 @@ export function ContactPageClient({ pageSeo, courseNames }: ContactPageClientPro
   const headquartersAddress = formatAddress(getSetting(settings, ['office_address', 'company_address', 'contact_address']));
   const primaryEmail = formatEmail(getSetting(settings, ['primary_email', 'contact_email']));
   const supportEmail = formatEmail(getSetting(settings, ['support_email', 'secondary_email']));
-  const primaryPhone = formatPhone(getSetting(settings, ['whatsapp_number', 'contact_phone', 'phone_number']));
+  const primaryPhone = formatPhone(getPrimaryPhone(settings));
   const whatsappNumber = getWhatsappNumber(settings);
   const workingHours = getSetting(settings, ['working_hours'], DEFAULT_CONTACT.workingHours);
   const directionsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(headquartersAddress)}`;
   const mapEmbedUrl = getMapEmbedUrl(getSetting(settings, ['google_maps_embed_url']));
-  const socialLinks = getEnabledSocialLinks(settings);
+  const socialLinks = getRealSocialLinks(settings);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from 'next/link';
-import { getRealSocialLinks, getSetting } from '../../utils/settings';
+import { getPrimaryPhone, getRealSocialLinks, getSetting } from '../../utils/settings';
 import { resolveImageUrl } from '../../utils/image-url';
 import { getWhatsappNumber } from './site-settings';
 import { serviceAnchor } from '../../utils/site';
@@ -48,7 +48,7 @@ export function SiteFooter({ settings, services = [] }: { settings?: any; servic
   const companyName = getSetting(settings, ['site_name', 'company_name'], 'KN Softic');
   const tagline = getSetting(settings, ['footer_text', 'website_tagline'], 'Software House & IT Institute');
   const address = getSetting(settings, ['contact_address', 'office_address', 'company_address'], 'Faisalabad, Pakistan');
-  const phone = getSetting(settings, ['contact_phone', 'phone_number'], '+92 345 2470250');
+  const phone = getPrimaryPhone(settings);
   const email = getSetting(settings, ['contact_email', 'primary_email'], 'info@knsoftic.com');
   const logoUrl = settings?.light_logo_url || settings?.logo_url;
 

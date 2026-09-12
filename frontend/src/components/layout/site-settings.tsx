@@ -15,9 +15,12 @@ export function useSiteSettings() {
   return useContext(SiteSettingsContext);
 }
 
-/** WhatsApp number as digits only: whatsapp_number → contact_phone → phone_number → default. */
+/**
+ * The WhatsApp link's number, as digits only. Reads the same fields in the same order as
+ * getPrimaryPhone, so the number a visitor taps is the number the page shows them.
+ */
 export function getWhatsappNumber(settings: any) {
-  for (const key of ['whatsapp_number', 'contact_phone', 'phone_number']) {
+  for (const key of ['contact_phone', 'whatsapp_number', 'customer_care_number', 'phone_number']) {
     const digits = String(settings?.[key] ?? '').replace(/\D/g, '');
     if (digits) {
       return digits;

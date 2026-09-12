@@ -1,6 +1,6 @@
 import Script from 'next/script';
 import { JsonLd } from './json-ld';
-import { getRealSocialLinks, getSetting, toOpeningHours, toPostalAddress } from '../../utils/settings';
+import { getPrimaryPhone, getRealSocialLinks, getSetting, toOpeningHours, toPostalAddress } from '../../utils/settings';
 import { SITE_NAME, SITE_URL, parseSiteUrl } from '../../utils/site';
 
 // Tracking IDs are interpolated into inline scripts, so only well-formed IDs are accepted.
@@ -25,10 +25,9 @@ export function SiteScripts({ globalSeo, settings }: SiteScriptsProps) {
   // with it if that server were ever unreachable.
   const logo = `${siteUrl}/assets/images/kn-softic-mark.png`;
 
-  // The number quoted here must be the one on the page: Google cross-checks it against the
-  // business profile, and a mismatch weakens local ranking. The footer shows contact_phone first.
-  const primaryPhone = getSetting(settings, ['contact_phone', 'whatsapp_number', 'customer_care_number', 'phone_number']);
-  const landline = getSetting(settings, ['phone_number']);
+  // The number published here is the same one the pages show. Google cross-checks it against the
+  // business profile, so a second number here would weaken local ranking rather than help.
+  const primaryPhone = getPrimaryPhone(settings);
 
   const addressText = getSetting(settings, ['office_address', 'contact_address', 'company_address']);
   const postalAddress = toPostalAddress(addressText, name);
@@ -48,14 +47,12 @@ export function SiteScripts({ globalSeo, settings }: SiteScriptsProps) {
     telephone: primaryPhone || undefined,
     address: postalAddress || addressText || undefined,
     ...(openingHours ? { openingHours } : {}),
-    ...(landline && landline !== primaryPhone
-      ? {
-          contactPoint: [
-            { '@type': 'ContactPoint', telephone: primaryPhone, contactType: 'customer support', areaServed: 'PK' },
-            { '@type': 'ContactPoint', telephone: landline, contactType: 'sales', areaServed: 'PK' },
-          ],
-        }
-      : {}),
+    contactPoint: {
+      '@type': 'ContactPoint',
+      telephone: primaryPhone,
+      contactType: 'customer support',
+      areaServed: 'PK',
+    },
     // Only profiles that actually exist: a link to a network's front page is an invalid signal.
     sameAs: getRealSocialLinks(settings).map((link) => link.url),
   };
