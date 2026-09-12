@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { resolveImageUrl } from '../../utils/image-url';
+import { optimizedImage, resolveImageUrl } from '../../utils/image-url';
 import { SplitWords } from '../common/split-words';
 import { CountUp, type FunFactItem } from './fun-facts';
 
@@ -147,10 +147,16 @@ export function HeroSlider({ slides, stats = [], marquee = [] }: HeroSliderProps
                     <span className="ks-hero__ring ks-hero__ring--3" aria-hidden="true"></span>
                     <span className="ks-hero__halo" aria-hidden="true"></span>
                     <img
-                      src={resolveImageUrl(slide.image_url, '/assets/images/cover-object.png')}
+                      {...optimizedImage(
+                        resolveImageUrl(slide.image_url, '/assets/images/cover-object.png'),
+                        '(max-width: 900px) 90vw, 620px',
+                        [384, 640, 828, 1200]
+                      )}
                       alt={slide.title}
                       className="ks-hero__image"
                       fetchPriority={index === 0 ? 'high' : undefined}
+                      loading={index === 0 ? 'eager' : 'lazy'}
+                      decoding={index === 0 ? 'sync' : 'async'}
                     />
                     <div className="ks-hero__float ks-hero__float--a" aria-hidden="true">
                       <span className="ks-icon-tile ks-icon-tile--sm ks-icon-tile--grad"><i className="fa fa-code"></i></span>

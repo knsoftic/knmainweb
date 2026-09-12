@@ -1,6 +1,6 @@
 "use client";
 
-import { resolveImageUrl } from '../../utils/image-url';
+import { optimizedImage, resolveImageUrl } from '../../utils/image-url';
 import { getWhatsappNumber, useSiteSettings } from '../layout/site-settings';
 
 const FALLBACK_IMAGE = '/assets/images/cover-object.png';
@@ -19,7 +19,12 @@ export const CourseCard = ({ course }: { course: any }) => {
   return (
     <article className="ks-card ks-card--hover ks-course-card">
       <div className="ks-course-card__media">
-        <img src={imageSrc} alt={course.title} loading="lazy" />
+        <img
+          {...optimizedImage(imageSrc, '(max-width: 700px) 100vw, (max-width: 1100px) 50vw, 33vw')}
+          alt={course.title}
+          loading="lazy"
+          decoding="async"
+        />
         {course.category && <span className="ks-chip ks-chip--white">{course.category}</span>}
       </div>
 

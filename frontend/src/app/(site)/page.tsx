@@ -9,7 +9,7 @@ import { HeroSlider } from '../../components/sections/hero-slider';
 import { ServiceExplorer } from '../../components/sections/service-explorer';
 import { PageSchema } from '../../components/seo/json-ld';
 import { safeFetch } from '../../utils/safe-fetch';
-import { resolveImageUrl } from '../../utils/image-url';
+import { optimizedImage, resolveImageUrl } from '../../utils/image-url';
 import { apiUrl } from '../../utils/api-url';
 import { generatePageMetadata } from '../../utils/seo';
 import { revealDelay } from '../../utils/reveal';
@@ -97,7 +97,12 @@ export default async function HomePage() {
                   <div className="ks-card__body">
                     {/* Gradient tile behind the icon: the default card icons are white. */}
                     <span className="ks-icon-tile ks-icon-tile--lg ks-icon-tile--grad" aria-hidden="true">
-                      <img src={resolveImageUrl(card.image_url, '/assets/images/service-01.png')} alt="" />
+                      <img
+                        {...optimizedImage(resolveImageUrl(card.image_url, '/assets/images/service-01.png'), '64px', [128])}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                      />
                     </span>
                     <h3 className="ks-card__title">{card.title}</h3>
                     <p className="ks-card__text">{card.description}</p>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { resolveImageUrl } from '../../utils/image-url';
+import { optimizedImage, resolveImageUrl } from '../../utils/image-url';
 
 const AUTOPLAY_MS = 7000;
 
@@ -65,7 +65,11 @@ export function TestimonialsSection({ testimonials = [] }: { testimonials?: any[
             </blockquote>
             <figcaption className="ks-quote__author">
               <img
-                src={resolveImageUrl(current.image_url, '/assets/images/testimonial-author.jpg')}
+                {...optimizedImage(
+                  resolveImageUrl(current.image_url, '/assets/images/testimonial-author.jpg'),
+                  '54px',
+                  [128]
+                )}
                 alt=""
                 width={54}
                 height={54}

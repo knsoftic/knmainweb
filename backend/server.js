@@ -114,6 +114,11 @@ const blogPublicLimiter = rateLimit({
 // Static file serving for uploads. The strict policy stops an uploaded SVG from running script when
 // opened directly; it doesn't affect images embedded with <img>.
 const uploadStaticOptions = {
+  // Uploads are saved under a name that includes a timestamp and random text, so a given address
+  // always returns the same picture and replacing an image produces a new address. Browsers can
+  // therefore keep these for a year instead of asking again on every page.
+  maxAge: '365d',
+  immutable: true,
   setHeaders: (res) => {
     res.setHeader('Content-Security-Policy', "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox");
   },

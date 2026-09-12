@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { resolveImageUrl } from '../../utils/image-url';
+import { optimizedImage, resolveImageUrl } from '../../utils/image-url';
 import { revealDelay } from '../../utils/reveal';
 import { getImageSeo } from '../../utils/seo';
 
@@ -25,9 +25,20 @@ export async function ProjectCard({ project, index = 0, columns = 3 }: { project
       <span className="ks-project-card__media">
         {imageUrl ? (
           <>
-            {/* A blurred copy fills the frame, so wide logos and tall screenshots both sit well. */}
-            <span className="ks-project-card__fill" style={{ backgroundImage: `url(${imageUrl})` }} aria-hidden="true"></span>
-            <img src={imageUrl} alt={imgSeo.alt_text || project.title} title={imgSeo.title} loading="lazy" />
+            {/* A blurred copy fills the frame, so wide logos and tall screenshots both sit well.
+                It is heavily blurred, so the smallest optimized size is more than enough. */}
+            <span
+              className="ks-project-card__fill"
+              style={{ backgroundImage: `url(${optimizedImage(imageUrl, '384px', [384]).src})` }}
+              aria-hidden="true"
+            ></span>
+            <img
+              {...optimizedImage(imageUrl, '(max-width: 700px) 100vw, (max-width: 1100px) 50vw, 25vw')}
+              alt={imgSeo.alt_text || project.title}
+              title={imgSeo.title}
+              loading="lazy"
+              decoding="async"
+            />
           </>
         ) : (
           <span className="ks-project-card__icon" aria-hidden="true">

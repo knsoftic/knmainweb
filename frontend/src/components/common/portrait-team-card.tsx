@@ -1,4 +1,4 @@
-import { resolveImageUrl } from '../../utils/image-url';
+import { optimizedImage, resolveImageUrl } from '../../utils/image-url';
 import { revealDelay } from '../../utils/reveal';
 import { getImageSeo } from '../../utils/seo';
 
@@ -34,7 +34,14 @@ export async function PortraitTeamCard({ member, index = 0 }: { member: TeamMemb
     <article className="ks-card ks-card--hover ks-team-card" itemScope itemType="https://schema.org/Person" data-reveal="" style={revealDelay(index, 4)}>
       <div className="ks-team-card__photo">
         {finalImgSrc ? (
-          <img itemProp="image" src={finalImgSrc} alt={imgSeo?.alt_text || member.name} title={imgSeo?.title} loading="lazy" />
+          <img
+            itemProp="image"
+            {...optimizedImage(finalImgSrc, '(max-width: 700px) 100vw, (max-width: 1100px) 50vw, 25vw')}
+            alt={imgSeo?.alt_text || member.name}
+            title={imgSeo?.title}
+            loading="lazy"
+            decoding="async"
+          />
         ) : (
           // No photo uploaded: show the member's initials instead of a broken image.
           <div className="ks-team-card__initials" role="img" aria-label={member.name}>

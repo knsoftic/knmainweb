@@ -29,6 +29,17 @@ const nextConfig = {
     ],
     ...(isDev ? { dangerouslyAllowLocalIP: true } : {}),
   },
+  async headers() {
+    return [
+      {
+        // The template's CSS, fonts and images in public/assets. Their names never change, so a
+        // visitor should download them once rather than on every page. A deployment that changes
+        // one is picked up because the file's timestamp changes and the browser revalidates.
+        source: '/assets/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=604800, stale-while-revalidate=86400' }],
+      },
+    ];
+  },
   async redirects() {
     return [
       {

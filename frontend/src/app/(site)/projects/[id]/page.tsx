@@ -7,7 +7,7 @@ import { SectionHeader } from '../../../../components/common/section-header';
 import { ProjectCard } from '../../../../components/common/project-card';
 import { safeFetch } from '../../../../utils/safe-fetch';
 import { apiUrl } from '../../../../utils/api-url';
-import { resolveImageUrl } from '../../../../utils/image-url';
+import { optimizedImage, resolveImageUrl } from '../../../../utils/image-url';
 import { getImageSeo } from '../../../../utils/seo';
 
 type Props = { params: Promise<{ id: string }> };
@@ -77,8 +77,18 @@ export default async function ProjectPage({ params }: Props) {
               {imageUrl ? (
                 <>
                   {/* The blurred copy fills the frame behind, so screenshots and logos both sit well. */}
-                  <span className="ks-project-hero__fill" style={{ backgroundImage: `url(${imageUrl})` }} aria-hidden="true"></span>
-                  <img src={imageUrl} alt={imgSeo.alt_text || project.title} title={imgSeo.title} />
+                  <span
+                    className="ks-project-hero__fill"
+                    style={{ backgroundImage: `url(${optimizedImage(imageUrl, '384px', [384]).src})` }}
+                    aria-hidden="true"
+                  ></span>
+                  <img
+                    {...optimizedImage(imageUrl, '(max-width: 1000px) 100vw, 620px', [384, 640, 828, 1200])}
+                    alt={imgSeo.alt_text || project.title}
+                    title={imgSeo.title}
+                    fetchPriority="high"
+                    decoding="async"
+                  />
                 </>
               ) : (
                 <span className="ks-project-card__icon" aria-hidden="true">
