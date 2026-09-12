@@ -1,46 +1,52 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { AdminTable } from '../../../components/common/admin-table';
 import { AdminButton, AdminInput, AdminImageUpload } from '../../../components/common/admin-form-elements';
 import { apiService } from '../../../services/api';
+import { useLoadOnMount } from '../../../utils/use-load-on-mount';
 import { resolveImageUrl } from '../../../utils/image-url';
 import CreatableSelect from 'react-select/creatable';
+import { confirmAction, notify } from '../../../components/common/admin-feedback';
+
+// Must match how the public /courses page derives its filter classes from `course.category`.
+const toCourseFilterSlug = (category: string) => category.toLowerCase().replace(/[^a-z0-9]+/g, '_');
 
 export default function CoursesManager() {
   const [courses, setCourses] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [currentCourse, setCurrentCourse] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    fetchCourses();
-    fetchCategories();
-  }, []);
+  // Course categories live on the courses themselves (the public page builds its filter tabs from them),
+  // so suggest the ones already in use instead of the unrelated service categories.
+  const categoryOptions = useMemo(() => {
+    const names = courses
+      .map((c) => (typeof c.category === 'string' ? c.category.trim() : ''))
+      .filter(Boolean);
+    return Array.from(new Set(names)).sort().map((name) => ({ value: name, label: name }));
+  }, [courses]);
+
+  const loadCourses = async () => {
+    const data = await apiService.get('/courses');
+    return data || [];
+  };
 
   const fetchCourses = async () => {
     setLoading(true);
     try {
-      const data = await apiService.get('/courses');
-      setCourses(data || []);
+      setCourses(await loadCourses());
     } catch (e) {
       console.error(e);
     }
     setLoading(false);
   };
 
-  const fetchCategories = async () => {
-    try {
-      const data = await apiService.get('/service-categories');
-      setCategories(data || []);
-    } catch (e) {
-      console.error(e);
-    }
-  };
+  useLoadOnMount(loadCourses, setCourses, { onSettled: () => setLoading(false) });
 
   const columns = [
-    { key: 'image_url', label: 'Image', render: (val: string) => <img src={resolveImageUrl(val, '/assets/images/course-default.jpg')} alt="Course" style={{ width: '60px', height: '40px', objectFit: 'cover', borderRadius: '4px' }} /> },
+    { key: 'image_url', label: 'Image', render: (val: string) => <img src={resolveImageUrl(val, '/assets/images/cover-object.png')} alt="Course" style={{ width: '60px', height: '40px', objectFit: 'cover', borderRadius: '4px' }} /> },
     { key: 'title', label: 'Course Title' },
     { key: 'category', label: 'Category' },
     { key: 'duration', label: 'Duration' },
@@ -52,39 +58,30 @@ export default function CoursesManager() {
   };
 
   const handleDelete = async (item: any) => {
-    if (confirm(`Are you sure you want to delete ${item.title}?`)) {
+    if (await confirmAction(`Are you sure you want to delete ${item.title}?`)) {
       try {
         await apiService.delete(`/courses/${item.id}`);
         setCourses(courses.filter(c => c.id !== item.id));
       } catch (e) {
-        alert('Failed to delete');
+        notify('Failed to delete');
       }
     }
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
+    setSaving(true);
     try {
-      let finalCategoryName = currentCourse.category || 'Course';
-      
-      if (currentCourse.isNewCategory) {
-        const filterSlug = finalCategoryName.toLowerCase().replace(/[^a-z0-9]+/g, '_');
-        await apiService.post('/service-categories', {
-          id: filterSlug,
-          name: finalCategoryName,
-          filter_slug: filterSlug
-        });
-        fetchCategories();
-      }
+      const finalCategoryName = (currentCourse.category || '').trim() || 'Course';
 
-      const payload = { 
+      const payload = {
         ...currentCourse,
         category: finalCategoryName,
-        filter_slug: finalCategoryName.toLowerCase().replace(/[^a-z0-9]+/g, '_'),
-        image_url: currentCourse.image_url || '/assets/images/course-default.jpg',
+        filter_slug: toCourseFilterSlug(finalCategoryName),
+        image_url: currentCourse.image_url || '',
         is_active: 1
       };
-      delete payload.isNewCategory;
 
       if (currentCourse.id_exists) {
         await apiService.put(`/courses/${currentCourse.id}`, payload);
@@ -96,7 +93,9 @@ export default function CoursesManager() {
       setIsEditing(false);
       setCurrentCourse(null);
     } catch (e) {
-      alert('Failed to save course');
+      notify('Failed to save course');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -128,17 +127,16 @@ export default function CoursesManager() {
                 </label>
                 <CreatableSelect
                   isClearable
-                  options={categories.map(c => ({ value: c.name, label: c.name }))}
+                  options={categoryOptions}
                   value={
-                    currentCourse?.category 
-                      ? { value: currentCourse.category, label: currentCourse.category } 
+                    currentCourse?.category
+                      ? { value: currentCourse.category, label: currentCourse.category }
                       : null
                   }
                   onChange={(newValue: any) => {
                     setCurrentCourse({
                       ...currentCourse,
-                      category: newValue?.value || '',
-                      isNewCategory: newValue?.__isNew__ || false
+                      category: newValue?.value || ''
                     });
                   }}
                   styles={{
@@ -170,7 +168,7 @@ export default function CoursesManager() {
             />
             
             <div style={{ display: 'flex', gap: '15px', marginTop: '20px' }}>
-              <AdminButton type="submit">Save Course</AdminButton>
+              <AdminButton type="submit" loading={saving}>{saving ? 'Saving...' : 'Save Course'}</AdminButton>
               <AdminButton type="button" variant="secondary" onClick={() => setIsEditing(false)}>Cancel</AdminButton>
             </div>
           </form>

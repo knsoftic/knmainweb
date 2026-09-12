@@ -1,32 +1,37 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { AdminTable } from '../../../../components/common/admin-table';
 import { AdminButton, AdminInput, AdminTextarea, AdminImageUpload } from '../../../../components/common/admin-form-elements';
 import { apiService } from '../../../../services/api';
+import { useLoadOnMount } from '../../../../utils/use-load-on-mount';
 import { resolveImageUrl } from '../../../../utils/image-url';
+import { confirmAction, notify } from '../../../../components/common/admin-feedback';
 
 export default function BlogCategoriesManager() {
   const [categories, setCategories] = useState<any[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [currentCategory, setCurrentCategory] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    fetchCategories();
-  }, []);
+  const loadCategories = async () => {
+    const data = await apiService.get('/blog/categories');
+    return data || [];
+  };
 
   const fetchCategories = async () => {
     setLoading(true);
     try {
-      const data = await apiService.get('/blog/categories');
-      setCategories(data || []);
+      setCategories(await loadCategories());
     } catch (e) {
       console.error(e);
     }
     setLoading(false);
   };
+
+  useLoadOnMount(loadCategories, setCategories, { onSettled: () => setLoading(false) });
 
   const columns = [
     { key: 'name', label: 'Category Name' },
@@ -41,18 +46,20 @@ export default function BlogCategoriesManager() {
   };
 
   const handleDelete = async (item: any) => {
-    if (confirm(`Are you sure you want to delete category "${item.name}"?`)) {
+    if (await confirmAction(`Are you sure you want to delete category "${item.name}"?`)) {
       try {
         await apiService.delete(`/blog/categories/${item.id}`);
         setCategories(categories.filter(c => c.id !== item.id));
       } catch (e) {
-        alert('Failed to delete category');
+        notify('Failed to delete category');
       }
     }
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
+    setSaving(true);
     try {
       const slug = currentCategory.slug || currentCategory.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
       const payload = {
@@ -71,7 +78,9 @@ export default function BlogCategoriesManager() {
       setIsEditing(false);
       setCurrentCategory(null);
     } catch (e) {
-      alert('Failed to save category');
+      notify('Failed to save category');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -142,7 +151,7 @@ export default function BlogCategoriesManager() {
             </div>
 
             <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-              <AdminButton type="submit">Save Category</AdminButton>
+              <AdminButton type="submit" loading={saving}>{saving ? 'Saving...' : 'Save Category'}</AdminButton>
               <AdminButton type="button" variant="secondary" onClick={() => setIsEditing(false)}>Cancel</AdminButton>
             </div>
           </form>

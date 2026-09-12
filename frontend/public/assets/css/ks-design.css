@@ -1,0 +1,2363 @@
+/* ==========================================================================
+   KN Softic — site design system
+   Layout, components and spacing for the public site. Colours and fonts are
+   the site's existing ones (brand gradient #8D18D0 → #3930C7, violet #7a6ad8,
+   lavender tints, footer purples; Conthrax for display titles, Inter for text).
+   Every class is prefixed `ks-` so nothing collides with the template CSS.
+   ========================================================================== */
+
+:root {
+  /* Brand (existing values) */
+  --ks-purple: #8D18D0;
+  --ks-indigo: #3930C7;
+  --ks-violet: #7a6ad8;
+  --ks-indigo-600: #4f46e5;
+  --ks-lilac: #c084fc;
+  --ks-grad: linear-gradient(135deg, #8D18D0 0%, #3930C7 100%);
+  --ks-grad-soft: linear-gradient(135deg, #8D18D0 0%, #b84af5 100%);
+  --ks-grad-dark: linear-gradient(160deg, #1a063a 0%, #2d0b62 45%, #3d0d7a 100%);
+
+  /* Neutrals (existing values) */
+  --ks-ink: #1e1e1e;
+  --ks-ink-2: #1a1a2e;
+  --ks-text: #4a4a4a;
+  --ks-muted: #888;
+  --ks-canvas: #f0f2f8;
+  --ks-surface: #ffffff;
+  --ks-tint: #f1f0fe;
+  --ks-tint-2: #f8f7ff;
+  --ks-field: #f8f9fc;
+  --ks-line: rgba(122, 106, 216, 0.15);
+  --ks-line-strong: rgba(122, 106, 216, 0.35);
+  --ks-green: #00e676;
+  --ks-whatsapp: #25d366;
+
+  /* Shape & depth */
+  --ks-radius-sm: 10px;
+  --ks-radius: 16px;
+  --ks-radius-lg: 24px;
+  --ks-radius-xl: 32px;
+  --ks-shadow-sm: 0 4px 14px rgba(122, 106, 216, 0.08);
+  --ks-shadow: 0 14px 34px rgba(122, 106, 216, 0.14);
+  --ks-shadow-lg: 0 24px 60px rgba(141, 24, 208, 0.18);
+  --ks-shadow-btn: 0 10px 24px rgba(141, 24, 208, 0.3);
+
+  /* Type */
+  --ks-font: 'Inter', sans-serif;
+  --ks-font-display: 'Conthrax', 'Inter', sans-serif;
+
+  /* Layout */
+  --ks-container: 1240px;
+  --ks-gutter: 24px;
+  --ks-header-h: 88px;
+  --ks-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* --------------------------------------------------------------------------
+   Layout primitives
+   -------------------------------------------------------------------------- */
+.ks-container {
+  width: 100%;
+  max-width: calc(var(--ks-container) + var(--ks-gutter) * 2);
+  margin: 0 auto;
+  padding: 0 var(--ks-gutter);
+}
+
+.ks-section {
+  padding: 110px 0;
+  position: relative;
+}
+.ks-section--white { background: var(--ks-surface); }
+.ks-section--tint { background: var(--ks-tint-2); }
+.ks-section--tight { padding: 80px 0; }
+.ks-section + .ks-section--flush-top { padding-top: 0; }
+
+.ks-grid {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.ks-grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ks-grid--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+.ks-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 64px;
+  align-items: center;
+}
+
+.ks-visually-hidden {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0);
+  white-space: nowrap; border: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Type
+   -------------------------------------------------------------------------- */
+.ks-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--ks-font);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ks-purple);
+  margin: 0 0 16px;
+}
+.ks-eyebrow::before {
+  content: '';
+  width: 22px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--ks-grad);
+}
+.ks-eyebrow--light { color: var(--ks-lilac); }
+.ks-eyebrow--light::before { background: var(--ks-lilac); }
+
+.ks-title {
+  font-family: var(--ks-font);
+  font-size: clamp(1.9rem, 3.2vw, 2.7rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--ks-ink);
+  margin: 0;
+  text-wrap: balance;
+}
+.ks-title--light { color: #fff; }
+
+.ks-display {
+  font-family: var(--ks-font-display);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+  color: #fff;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.ks-lead {
+  font-size: 1.05rem;
+  line-height: 1.75;
+  color: var(--ks-text);
+  margin: 0;
+}
+.ks-lead--light { color: rgba(255, 255, 255, 0.75); }
+
+.ks-text-grad {
+  background: var(--ks-grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* --------------------------------------------------------------------------
+   Section header: eyebrow + title on the left, summary + action on the right
+   -------------------------------------------------------------------------- */
+.ks-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 24px 64px;
+  align-items: end;
+  margin-bottom: 56px;
+}
+.ks-head__aside {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 18px;
+}
+.ks-head__aside .ks-lead { font-size: 1rem; }
+.ks-head--center {
+  grid-template-columns: 1fr;
+  text-align: center;
+  justify-items: center;
+}
+.ks-head--center .ks-head__aside { align-items: center; max-width: 640px; }
+.ks-head--compact { margin-bottom: 36px; }
+
+/* --------------------------------------------------------------------------
+   Buttons & links
+   -------------------------------------------------------------------------- */
+.ks-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 50px;
+  padding: 0 24px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  font-family: var(--ks-font);
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  text-decoration: none !important;
+  transition: transform 0.25s var(--ks-ease), box-shadow 0.25s var(--ks-ease), background-color 0.25s, color 0.25s, border-color 0.25s;
+}
+.ks-btn i { font-size: 0.9em; transition: transform 0.25s var(--ks-ease); }
+.ks-btn:hover i.fa-arrow-right, .ks-btn:hover i.bi-arrow-right { transform: translateX(3px); }
+.ks-btn:disabled { opacity: 0.65; cursor: not-allowed; }
+
+.ks-btn--primary { background: var(--ks-grad); color: #fff; box-shadow: var(--ks-shadow-btn); }
+.ks-btn--primary:hover { color: #fff; transform: translateY(-2px); box-shadow: 0 16px 32px rgba(141, 24, 208, 0.36); }
+
+.ks-btn--light { background: #fff; color: var(--ks-purple); box-shadow: 0 10px 24px rgba(0, 0, 0, 0.15); }
+.ks-btn--light:hover { color: var(--ks-indigo); transform: translateY(-2px); }
+
+.ks-btn--ghost { background: rgba(255, 255, 255, 0.08); color: #fff; border-color: rgba(255, 255, 255, 0.35); }
+.ks-btn--ghost:hover { color: #fff; background: rgba(255, 255, 255, 0.18); border-color: rgba(255, 255, 255, 0.65); }
+
+.ks-btn--outline { background: #fff; color: var(--ks-ink); border-color: var(--ks-line-strong); }
+.ks-btn--outline:hover { color: var(--ks-purple); border-color: var(--ks-purple); }
+
+.ks-btn--whatsapp { background: var(--ks-whatsapp); color: #fff; }
+.ks-btn--whatsapp:hover { color: #fff; transform: translateY(-2px); box-shadow: 0 12px 26px rgba(37, 211, 102, 0.3); }
+
+.ks-btn--sm { min-height: 42px; padding: 0 18px; font-size: 0.88rem; border-radius: 10px; }
+.ks-btn--block { width: 100%; }
+
+.ks-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--ks-purple);
+  text-decoration: none !important;
+}
+.ks-link i { transition: transform 0.25s var(--ks-ease); font-size: 0.85em; }
+.ks-link:hover { color: var(--ks-indigo); }
+.ks-link:hover i { transform: translateX(4px); }
+
+.ks-icon-btn {
+  width: 48px;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  border: 1px solid var(--ks-line-strong);
+  background: #fff;
+  color: var(--ks-ink);
+  cursor: pointer;
+  transition: all 0.25s var(--ks-ease);
+}
+.ks-icon-btn:hover { color: #fff; background: var(--ks-grad); border-color: transparent; }
+
+/* --------------------------------------------------------------------------
+   Chips & icon tiles
+   -------------------------------------------------------------------------- */
+.ks-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: var(--ks-tint);
+  color: var(--ks-violet);
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+}
+.ks-chip--solid { background: var(--ks-grad); color: #fff; }
+.ks-chip--glass {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.ks-chip--white { background: #fff; color: var(--ks-purple); box-shadow: var(--ks-shadow-sm); }
+.ks-chip--outline { background: transparent; border: 1px solid var(--ks-line-strong); color: var(--ks-violet); }
+
+.ks-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 16px 7px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.ks-badge__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ks-green);
+  box-shadow: 0 0 0 4px rgba(0, 230, 118, 0.18);
+}
+
+.ks-icon-tile {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: var(--ks-tint);
+  color: var(--ks-purple);
+  font-size: 1.35rem;
+}
+.ks-icon-tile--grad { background: var(--ks-grad); color: #fff; box-shadow: 0 10px 22px rgba(141, 24, 208, 0.28); }
+.ks-icon-tile--sm { width: 44px; height: 44px; border-radius: 12px; font-size: 1.05rem; }
+.ks-icon-tile--lg { width: 72px; height: 72px; border-radius: 20px; font-size: 1.8rem; }
+.ks-icon-tile img { width: 60%; height: 60%; object-fit: contain; }
+
+/* --------------------------------------------------------------------------
+   Card
+   -------------------------------------------------------------------------- */
+.ks-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--ks-surface);
+  border: 1px solid var(--ks-line);
+  border-radius: var(--ks-radius);
+  transition: transform 0.35s var(--ks-ease), box-shadow 0.35s var(--ks-ease), border-color 0.35s;
+}
+.ks-card--hover:hover {
+  transform: translateY(-6px);
+  border-color: var(--ks-line-strong);
+  box-shadow: var(--ks-shadow);
+}
+.ks-card__body { padding: 28px; display: flex; flex-direction: column; flex: 1; }
+.ks-card__title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--ks-ink);
+  margin: 0 0 10px;
+}
+.ks-card__text {
+  font-size: 0.93rem;
+  line-height: 1.7;
+  color: var(--ks-text);
+  margin: 0;
+}
+.ks-card__foot {
+  margin-top: auto;
+  padding-top: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ks-card__foot--line { border-top: 1px solid var(--ks-line); margin-top: 22px; }
+
+.ks-checklist { list-style: none; padding: 0; margin: 18px 0 0; display: grid; gap: 10px; }
+.ks-checklist li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--ks-ink-2);
+}
+.ks-checklist li::before {
+  content: '\f00c';
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 900;
+  font-size: 0.6rem;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: var(--ks-grad);
+}
+.ks-checklist--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 20px; }
+.ks-checklist--light li { color: rgba(255, 255, 255, 0.88); }
+.ks-checklist--light li::before { background: rgba(255, 255, 255, 0.16); color: #fff; }
+
+/* --------------------------------------------------------------------------
+   Header
+   -------------------------------------------------------------------------- */
+.ks-header {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 1000;
+  padding: 18px 0;
+  transition: padding 0.35s var(--ks-ease), transform 0.5s var(--ks-ease);
+  animation: ks-drop-in 0.9s var(--ks-ease) backwards;
+}
+/* The scrolled background fades in rather than snapping on. */
+.ks-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--ks-grad);
+  box-shadow: 0 12px 30px rgba(57, 48, 199, 0.25);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+.ks-header.is-scrolled { padding: 10px 0; }
+.ks-header.is-scrolled::before { opacity: 1; }
+/* Slides up out of the way while scrolling down, comes back on scroll up (or keyboard focus). */
+.ks-header.is-hidden { transform: translateY(-110%); }
+.ks-header.is-hidden:focus-within { transform: none; }
+.ks-header__bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+.ks-logo { display: inline-flex; align-items: center; flex-shrink: 0; text-decoration: none !important; transition: transform 0.4s var(--ks-ease); }
+.ks-logo:hover { transform: scale(1.03); }
+.ks-logo img { height: 56px; width: auto; object-fit: contain; transition: height 0.35s var(--ks-ease); }
+.ks-header.is-scrolled .ks-logo img { height: 46px; }
+.ks-logo__text { display: flex; flex-direction: column; line-height: 1.05; color: #fff; }
+.ks-logo__name { font-family: var(--ks-font-display); font-size: 1.4rem; font-weight: 700; white-space: nowrap; }
+.ks-logo__tag { font-size: 0.72rem; opacity: 0.8; letter-spacing: 0.04em; margin-top: 3px; }
+
+.ks-nav {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  list-style: none;
+  margin: 0;
+}
+.ks-nav li { position: relative; z-index: 1; }
+/* Soft highlight that glides to whichever link is hovered (positioned by site-shell.tsx). */
+.ks-nav .ks-nav__pill {
+  position: absolute;
+  z-index: 0;
+  top: 6px;
+  bottom: 6px;
+  left: 0;
+  width: 0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.16);
+  opacity: 0;
+  transition: transform 0.4s var(--ks-ease), width 0.4s var(--ks-ease), opacity 0.25s ease;
+  pointer-events: none;
+}
+.ks-nav a {
+  display: block;
+  padding: 10px 16px;
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 0.92rem;
+  font-weight: 500;
+  text-decoration: none !important;
+  transition: background-color 0.25s, color 0.25s, box-shadow 0.25s;
+}
+.ks-nav a:hover { color: #fff; }
+.ks-nav a.is-active { background: #fff; color: var(--ks-purple); font-weight: 600; box-shadow: 0 6px 16px rgba(26, 6, 58, 0.18); }
+
+.ks-header__actions { display: flex; align-items: center; gap: 12px; }
+.ks-header__cta { min-height: 46px; }
+
+.ks-burger {
+  display: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.3rem;
+}
+.ks-burger i { transition: transform 0.4s var(--ks-ease); }
+.ks-burger[aria-expanded='true'] i { transform: rotate(90deg); }
+
+.ks-mobile-menu {
+  display: none;
+}
+
+/* Reading progress along the very top of the window (browsers with scroll-driven animations). */
+.ks-scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1001;
+  height: 3px;
+  background: linear-gradient(90deg, #b84af5, #c084fc);
+  box-shadow: 0 0 10px rgba(192, 132, 252, 0.7);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  pointer-events: none;
+}
+@supports (animation-timeline: scroll()) {
+  .ks-scroll-progress {
+    animation: ks-grow-x linear both;
+    animation-timeline: scroll(root block);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Shared hero background: drifting colour blobs, dot grid, grain
+   -------------------------------------------------------------------------- */
+.ks-hero__bg, .ks-page-hero__bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.ks-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  will-change: transform;
+}
+.ks-blob--1 { width: 540px; height: 540px; right: -140px; top: -200px; background: rgba(184, 74, 245, 0.55); animation: ks-drift-1 18s ease-in-out infinite alternate; }
+.ks-blob--2 { width: 480px; height: 480px; left: -180px; bottom: -220px; background: rgba(57, 48, 199, 0.75); animation: ks-drift-2 22s ease-in-out infinite alternate; }
+.ks-blob--3 { width: 360px; height: 360px; left: 36%; top: 26%; background: rgba(141, 24, 208, 0.45); animation: ks-drift-3 26s ease-in-out infinite alternate; }
+.ks-hero__grid {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.18) 1px, transparent 1px);
+  background-size: 28px 28px;
+  -webkit-mask-image: radial-gradient(ellipse 60% 70% at 72% 42%, #000 15%, transparent 75%);
+  mask-image: radial-gradient(ellipse 60% 70% at 72% 42%, #000 15%, transparent 75%);
+  animation: ks-dots-pan 40s linear infinite;
+}
+/* Fine grain (greyscale) that keeps large gradients from looking flat. */
+.ks-grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.12;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Title words rise out of a mask one after another (see split-words.tsx). */
+.ks-word {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  padding: 0.08em 0.03em 0.16em;
+  margin: -0.08em -0.03em -0.16em;
+}
+.ks-word > span { display: inline-block; transform-origin: 0 100%; }
+
+/* --------------------------------------------------------------------------
+   Home hero
+   -------------------------------------------------------------------------- */
+.ks-hero {
+  --px: 0;
+  --py: 0;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--ks-grad);
+  color: #fff;
+  padding: calc(var(--ks-header-h) + 44px) 0 0;
+  border-radius: 0 0 var(--ks-radius-xl) var(--ks-radius-xl);
+}
+.ks-hero--plain { padding-bottom: 64px; }
+/* Soft light that follows the mouse (position set by hero-slider.tsx). */
+.ks-hero__spot {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(560px circle at var(--mx, 70%) var(--my, 35%), rgba(255, 255, 255, 0.12), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+.ks-hero:hover .ks-hero__spot { opacity: 1; }
+
+/* Slides share one grid cell, so the hero is as tall as the tallest slide and never jumps. */
+.ks-hero__slides { position: relative; display: grid; }
+.ks-hero__slide {
+  grid-area: 1 / 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+  gap: 48px;
+  align-items: center;
+  align-content: center;
+  transition: opacity 0.5s ease, visibility 0.5s;
+}
+.ks-hero__slide.is-hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+.ks-hero__copy { position: relative; }
+.ks-hero__title { font-size: clamp(2.4rem, 4.3vw, 3.8rem); font-weight: 800; line-height: 1.1; margin: 22px 0 20px; }
+.ks-hero__desc { max-width: 590px; font-size: 1.05rem; line-height: 1.75; color: rgba(255, 255, 255, 0.8); margin: 0 0 32px; }
+.ks-hero__actions { display: flex; flex-wrap: wrap; gap: 14px; }
+
+/* Entrance choreography for the visible slide: runs on load and again on every slide change. */
+.ks-hero__slide:not(.is-hidden) .ks-badge { animation: ks-rise 0.7s var(--ks-ease) 0.1s backwards; }
+.ks-hero__slide:not(.is-hidden) .ks-word > span { animation: ks-word-up 0.9s var(--ks-ease) backwards; animation-delay: calc(0.18s + var(--i, 0) * 0.06s); }
+.ks-hero__slide:not(.is-hidden) .ks-hero__desc { animation: ks-rise 0.8s var(--ks-ease) 0.5s backwards; }
+.ks-hero__slide:not(.is-hidden) .ks-hero__actions { animation: ks-rise 0.8s var(--ks-ease) 0.65s backwards; }
+.ks-hero__slide:not(.is-hidden) .ks-hero__visual { animation: ks-zoom-in 1.1s var(--ks-ease) 0.15s backwards; }
+.ks-hero__slide:not(.is-hidden) .ks-hero__float--a { animation: ks-pop-in 0.7s var(--ks-ease) 0.7s backwards, ks-bob 6s ease-in-out 1.4s infinite; }
+.ks-hero__slide:not(.is-hidden) .ks-hero__float--b { animation: ks-pop-in 0.7s var(--ks-ease) 0.85s backwards, ks-bob 7s ease-in-out 1.6s infinite reverse; }
+.ks-hero__slide:not(.is-hidden) .ks-hero__code { animation: ks-pop-in 0.7s var(--ks-ease) 1s backwards, ks-bob 8s ease-in-out 1.8s infinite; }
+
+/* Visual: glow, orbit rings and floating cards around the slide image, tilting with the mouse. */
+.ks-hero__visual { position: relative; perspective: 1200px; }
+.ks-hero__stage {
+  position: relative;
+  aspect-ratio: 1 / 0.95;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: rotateX(calc(var(--py) * -8deg)) rotateY(calc(var(--px) * 10deg));
+  transition: transform 0.7s var(--ks-ease);
+}
+.ks-hero__halo {
+  position: absolute;
+  width: 64%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(192, 132, 252, 0.6), rgba(141, 24, 208, 0) 70%);
+  filter: blur(18px);
+  animation: ks-glow 6s ease-in-out infinite;
+}
+.ks-hero__ring {
+  position: absolute;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  translate: calc(var(--px) * -14px) calc(var(--py) * -14px);
+  transition: translate 0.7s var(--ks-ease);
+}
+.ks-hero__ring--1 { width: 94%; border-style: dashed; border-color: rgba(255, 255, 255, 0.24); animation: ks-spin 60s linear infinite; }
+.ks-hero__ring--2 { width: 74%; animation: ks-spin 34s linear infinite reverse; }
+.ks-hero__ring--3 { width: 54%; background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.12); }
+.ks-hero__ring i {
+  position: absolute;
+  top: -6px;
+  left: calc(50% - 6px);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.14), 0 0 18px rgba(255, 255, 255, 0.8);
+}
+.ks-hero__ring--2 i { top: auto; bottom: -5px; width: 10px; height: 10px; background: #c084fc; box-shadow: 0 0 0 5px rgba(192, 132, 252, 0.2), 0 0 16px rgba(192, 132, 252, 0.9); }
+.ks-hero__ring--2 i + i { bottom: auto; top: calc(50% - 4px); left: -4px; width: 8px; height: 8px; background: #00e676; box-shadow: 0 0 0 4px rgba(0, 230, 118, 0.18), 0 0 14px rgba(0, 230, 118, 0.8); }
+.ks-hero__image {
+  position: relative;
+  width: 74%;
+  max-height: 86%;
+  object-fit: contain;
+  filter: drop-shadow(0 30px 40px rgba(26, 6, 58, 0.45));
+  translate: calc(var(--px) * 24px) calc(var(--py) * 24px);
+  transition: translate 0.7s var(--ks-ease);
+  animation: ks-float 7s ease-in-out infinite;
+}
+.ks-hero__float {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px 12px 12px;
+  border-radius: 14px;
+  background: #fff;
+  color: var(--ks-ink);
+  box-shadow: 0 18px 40px rgba(26, 6, 58, 0.25);
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.25;
+  translate: calc(var(--px) * 36px) calc(var(--py) * 36px);
+  transition: translate 0.7s var(--ks-ease);
+}
+.ks-hero__float small { display: block; font-weight: 500; color: var(--ks-muted); font-size: 0.75rem; }
+.ks-hero__float--a { left: -2%; top: 20%; }
+.ks-hero__float--b { right: -2%; bottom: 16%; }
+/* Decorative "code editor" card whose lines type themselves out. */
+.ks-hero__code {
+  position: absolute;
+  z-index: 2;
+  right: 4%;
+  top: 3%;
+  width: 170px;
+  padding: 12px 14px 14px;
+  border-radius: 14px;
+  background: rgba(26, 6, 58, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 18px 40px rgba(26, 6, 58, 0.3);
+  translate: calc(var(--px) * -28px) calc(var(--py) * -28px);
+  transition: translate 0.7s var(--ks-ease);
+}
+.ks-hero__code-dots { display: flex; gap: 5px; margin-bottom: 4px; }
+.ks-hero__code-dots i { width: 7px; height: 7px; border-radius: 50%; background: #c084fc; }
+.ks-hero__code-dots i:nth-child(2) { background: #b84af5; }
+.ks-hero__code-dots i:nth-child(3) { background: #00e676; }
+.ks-hero__code-line {
+  display: block;
+  width: var(--w, 80%);
+  height: 6px;
+  margin: 8px 0 0 var(--indent, 0);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.3);
+  transform-origin: 0 50%;
+}
+.ks-hero__code-line--accent { background: #c084fc; }
+.ks-hero__code-line--ok { background: rgba(0, 230, 118, 0.85); }
+.ks-hero__slide:not(.is-hidden) .ks-hero__code-line { animation: ks-type 5s var(--ks-ease) infinite; animation-delay: var(--d, 0s); }
+
+.ks-hero__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px 40px;
+  margin-top: 44px;
+  padding-top: 26px;
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+  animation: ks-rise 0.9s var(--ks-ease) 0.95s backwards;
+}
+.ks-hero__stats { display: flex; flex-wrap: wrap; gap: 20px 0; margin: 0; }
+.ks-hero__stat {
+  display: flex;
+  flex-direction: column-reverse;
+  padding-right: 36px;
+  margin-right: 36px;
+  border-right: 1px solid rgba(255, 255, 255, 0.16);
+}
+.ks-hero__stat:last-child { border-right: 0; margin-right: 0; padding-right: 0; }
+.ks-hero__stat-num { display: block; margin: 0; font-size: 2rem; font-weight: 800; line-height: 1; letter-spacing: -0.02em; color: #fff; font-variant-numeric: tabular-nums; }
+.ks-hero__stat-label { display: block; margin-top: 8px; font-size: 0.82rem; font-weight: 500; color: rgba(255, 255, 255, 0.7); }
+
+.ks-hero__controls {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-left: auto;
+}
+.ks-hero__arrow {
+  width: 48px;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 0.25s, color 0.25s, transform 0.3s var(--ks-ease);
+}
+.ks-hero__arrow:hover { background: #fff; color: var(--ks-purple); transform: translateY(-2px); }
+.ks-hero__dots { display: flex; gap: 8px; }
+/* The visible bar is 4px; the button itself stays tall enough to tap (globals.css gives buttons 48px). */
+.ks-hero__dot {
+  position: relative;
+  width: 36px;
+  height: 24px;
+  min-height: 0;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  background: none;
+  transition: width 0.4s var(--ks-ease);
+}
+.ks-hero__dot::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 4px;
+  margin-top: -2px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.28);
+  transition: background-color 0.3s;
+}
+.ks-hero__dot:hover::before { background: rgba(255, 255, 255, 0.5); }
+.ks-hero__dot.is-active { width: 64px; }
+/* Fills while the slide is showing; when it finishes the next slide appears (hero-slider.tsx). */
+.ks-hero__dot-fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 4px;
+  margin-top: -2px;
+  border-radius: 4px;
+  background: #fff;
+  transform-origin: 0 50%;
+  animation: ks-progress var(--autoplay, 7s) linear forwards;
+}
+/* Hold the slide while someone reads it or uses the keyboard in the hero. */
+.ks-hero:has(.ks-hero__copy:hover) .ks-hero__dot-fill,
+.ks-hero:has(:focus-visible) .ks-hero__dot-fill { animation-play-state: paused; }
+.ks-hero__count { font-size: 0.82rem; color: rgba(255, 255, 255, 0.75); font-variant-numeric: tabular-nums; }
+
+.ks-marquee {
+  position: relative;
+  margin-top: 52px;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  animation: ks-fade 1s ease 1.1s backwards;
+}
+.ks-marquee__track {
+  display: flex;
+  width: max-content;
+  animation: ks-marquee 45s linear infinite;
+}
+.ks-marquee:hover .ks-marquee__track { animation-play-state: paused; }
+.ks-marquee__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 22px;
+  padding: 24px 22px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+}
+/* Every other name dimmed, for rhythm. */
+.ks-marquee__item:nth-child(even) { color: rgba(255, 255, 255, 0.5); }
+.ks-marquee__item::after { content: '✦'; color: rgba(255, 255, 255, 0.45); font-size: 0.8rem; }
+
+/* --------------------------------------------------------------------------
+   Inner page hero
+   -------------------------------------------------------------------------- */
+.ks-page-hero {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--ks-grad);
+  color: #fff;
+  padding: calc(var(--ks-header-h) + 72px) 0 88px;
+  border-radius: 0 0 var(--ks-radius-xl) var(--ks-radius-xl);
+}
+.ks-page-hero__bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.16) 1px, transparent 1px);
+  background-size: 26px 26px;
+  -webkit-mask-image: linear-gradient(90deg, transparent 35%, #000 100%);
+  mask-image: linear-gradient(90deg, transparent 35%, #000 100%);
+}
+.ks-page-hero .ks-blob--1 { width: 440px; height: 440px; right: -60px; top: -220px; }
+.ks-page-hero .ks-blob--2 { width: 380px; height: 380px; left: -140px; bottom: -260px; }
+.ks-page-hero__rings {
+  position: absolute;
+  right: -120px;
+  top: 50%;
+  width: 520px;
+  height: 520px;
+  translate: 0 -40%;
+  border-radius: 50%;
+  border: 1px dashed rgba(255, 255, 255, 0.22);
+  animation: ks-spin 70s linear infinite;
+}
+.ks-page-hero__rings::before,
+.ks-page-hero__rings::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+.ks-page-hero__rings::before { inset: 70px; }
+.ks-page-hero__rings::after { inset: 140px; background: rgba(255, 255, 255, 0.05); }
+.ks-page-hero__rings i {
+  position: absolute;
+  top: -6px;
+  left: calc(50% - 6px);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.14), 0 0 18px rgba(255, 255, 255, 0.8);
+}
+.ks-page-hero__inner { position: relative; max-width: 760px; }
+.ks-page-hero__title { font-size: clamp(2.3rem, 4.6vw, 3.7rem); margin: 20px 0 18px; }
+.ks-page-hero__desc { font-size: 1.08rem; line-height: 1.75; color: rgba(255, 255, 255, 0.78); max-width: 620px; margin: 0; }
+/* Entrance: breadcrumb, badge, title words, description, extras. */
+.ks-page-hero__inner > * { animation: ks-rise 0.8s var(--ks-ease) backwards; }
+.ks-page-hero__inner > :nth-child(2) { animation-delay: 0.1s; }
+.ks-page-hero__inner > :nth-child(3) { animation-delay: 0.2s; }
+.ks-page-hero__inner > :nth-child(4) { animation-delay: 0.45s; }
+.ks-page-hero__inner > :nth-child(n + 5) { animation-delay: 0.6s; }
+.ks-page-hero__inner > .ks-page-hero__title:has(.ks-word) { animation: none; }
+.ks-page-hero .ks-word > span { animation: ks-word-up 0.9s var(--ks-ease) backwards; animation-delay: calc(0.2s + var(--i, 0) * 0.06s); }
+
+.ks-crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 22px;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+.ks-crumbs a { color: rgba(255, 255, 255, 0.7); text-decoration: none !important; transition: color 0.2s; }
+.ks-crumbs a:hover { color: #fff; }
+.ks-crumbs li + li::before { content: '/'; margin-right: 8px; color: rgba(255, 255, 255, 0.4); }
+.ks-crumbs [aria-current='page'] { color: #fff; font-weight: 600; }
+
+/* --------------------------------------------------------------------------
+   Filters (segmented control)
+   -------------------------------------------------------------------------- */
+.ks-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 36px;
+  padding: 0;
+  list-style: none;
+}
+.ks-filter__btn {
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: 1px solid var(--ks-line);
+  background: #fff;
+  color: var(--ks-ink-2);
+  font-family: var(--ks-font);
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.ks-filter__btn:hover { border-color: var(--ks-line-strong); color: var(--ks-purple); }
+.ks-filter__btn[aria-pressed='true'] { background: var(--ks-grad); color: #fff; border-color: transparent; box-shadow: var(--ks-shadow-btn); }
+.ks-empty {
+  padding: 60px 24px;
+  text-align: center;
+  color: var(--ks-muted);
+  background: #fff;
+  border: 1px dashed var(--ks-line-strong);
+  border-radius: var(--ks-radius);
+}
+
+/* --------------------------------------------------------------------------
+   Highlight cards (homepage cards)
+   -------------------------------------------------------------------------- */
+.ks-highlight .ks-icon-tile { margin-bottom: 22px; }
+
+/* --------------------------------------------------------------------------
+   Service explorer (home)
+   -------------------------------------------------------------------------- */
+.ks-explorer {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.4fr);
+  gap: 28px;
+  align-items: stretch;
+}
+.ks-explorer__list { display: flex; flex-direction: column; gap: 12px; }
+.ks-explorer__tab {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 18px 20px;
+  text-align: left;
+  border-radius: var(--ks-radius);
+  border: 1px solid var(--ks-line);
+  background: #fff;
+  color: var(--ks-ink);
+  cursor: pointer;
+  font-family: var(--ks-font);
+  transition: all 0.3s var(--ks-ease);
+}
+.ks-explorer__tab:hover { border-color: var(--ks-line-strong); transform: translateX(4px); }
+.ks-explorer__tab-title { display: block; font-size: 1.02rem; font-weight: 700; line-height: 1.3; }
+.ks-explorer__tab-sub {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-top: 4px;
+  font-size: 0.84rem;
+  color: var(--ks-muted);
+}
+.ks-explorer__tab-arrow { margin-left: auto; font-size: 0.85rem; color: var(--ks-muted); transition: transform 0.3s var(--ks-ease); }
+.ks-explorer__tab[aria-selected='true'] {
+  background: var(--ks-grad);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: var(--ks-shadow-lg);
+  transform: none;
+}
+.ks-explorer__tab[aria-selected='true'] .ks-icon-tile { background: rgba(255, 255, 255, 0.18); color: #fff; }
+.ks-explorer__tab[aria-selected='true'] .ks-explorer__tab-sub { color: rgba(255, 255, 255, 0.8); }
+.ks-explorer__tab[aria-selected='true'] .ks-explorer__tab-arrow { color: #fff; transform: translateX(4px); }
+
+.ks-explorer__panel {
+  position: relative;
+  overflow: hidden;
+  padding: 44px;
+  border-radius: var(--ks-radius-lg);
+  background: #fff;
+  border: 1px solid var(--ks-line);
+  box-shadow: var(--ks-shadow);
+}
+.ks-explorer__panel::after {
+  content: '';
+  position: absolute;
+  width: 280px;
+  height: 280px;
+  right: -110px;
+  top: -110px;
+  border-radius: 50%;
+  background: var(--ks-tint);
+  pointer-events: none;
+}
+.ks-explorer__panel > * { position: relative; z-index: 1; }
+.ks-explorer__panel-title { font-size: clamp(1.4rem, 2.2vw, 1.8rem); font-weight: 700; color: var(--ks-ink); margin: 22px 0 14px; line-height: 1.25; }
+.ks-explorer__panel .ks-card__text { font-size: 0.98rem; }
+.ks-explorer__actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+
+/* --------------------------------------------------------------------------
+   Service card (services page)
+   -------------------------------------------------------------------------- */
+.ks-service-card .ks-card__body { padding: 32px; }
+.ks-service-card .ks-icon-tile { margin-bottom: 24px; }
+.ks-service-card:hover .ks-icon-tile { background: var(--ks-grad); color: #fff; }
+.ks-service-card .ks-icon-tile { transition: background-color 0.3s, color 0.3s; }
+
+/* --------------------------------------------------------------------------
+   Course card
+   -------------------------------------------------------------------------- */
+.ks-course-card { overflow: hidden; }
+.ks-course-card__media {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: var(--ks-tint);
+}
+.ks-course-card__media img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s var(--ks-ease);
+}
+.ks-course-card:hover .ks-course-card__media img { transform: scale(1.05); }
+.ks-course-card__media .ks-chip { position: absolute; left: 16px; top: 16px; }
+.ks-course-card__media .ks-chip, .ks-project-card__media .ks-chip, .ks-post-card__media .ks-chip {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.7rem;
+}
+.ks-course-card__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 14px; }
+.ks-course-card .ks-card__title { margin-bottom: 0; }
+
+/* --------------------------------------------------------------------------
+   Project card
+   -------------------------------------------------------------------------- */
+.ks-project-card { overflow: hidden; text-decoration: none !important; }
+.ks-project-card .ks-card__title, .ks-project-card .ks-card__text, .ks-project-card .ks-meta { display: block; }
+.ks-project-card:hover .ks-link { color: var(--ks-indigo); }
+.ks-project-card:hover .ks-link i { transform: translateX(4px); }
+.ks-project-card__media {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  /* Capped so a wide column cannot turn the panel into a billboard. */
+  max-height: 210px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: linear-gradient(155deg, var(--ks-tint-2), var(--ks-tint));
+  border-bottom: 1px solid var(--ks-line);
+}
+/* Contained, not cropped: these are logos and screenshots, and cropping either one looks broken.
+   A blurred copy of the picture fills the space around it instead of empty background. */
+.ks-project-card__media img {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 22px;
+  transition: transform 0.6s var(--ks-ease);
+}
+.ks-project-card__fill, .ks-project-hero__fill {
+  position: absolute;
+  inset: -12%;
+  background-position: center;
+  background-size: cover;
+  filter: blur(22px) saturate(1.1);
+  opacity: 0.45;
+  transform: scale(1.06);
+}
+.ks-project-card:hover .ks-project-card__media img { transform: scale(1.04); }
+/* Projects with no picture get their icon, sized like a product mark. */
+.ks-project-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 68px;
+  height: 68px;
+  border-radius: 20px;
+  background: var(--ks-grad);
+  color: #fff;
+  font-size: 1.6rem;
+  box-shadow: 0 16px 34px rgba(141, 24, 208, 0.28);
+  transition: transform 0.5s var(--ks-ease);
+}
+.ks-project-card:hover .ks-project-card__icon { transform: translateY(-4px) scale(1.04); }
+.ks-project-card__media .ks-chip { position: absolute; left: 16px; top: 16px; }
+.ks-project-card .ks-card__body { padding: 22px 24px 20px; }
+/* Pushed to the bottom so the bottom line sits at the same height on every card in a row. */
+.ks-project-card .ks-card__foot { margin-top: auto; padding-top: 16px; }
+.ks-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
+.ks-meta { font-size: 0.82rem; line-height: 1.6; color: var(--ks-muted); }
+
+/* Project page: large picture frame and the small facts list beside it. */
+.ks-project-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--ks-radius-lg);
+  border: 1px solid var(--ks-line);
+  background: linear-gradient(155deg, var(--ks-tint-2), var(--ks-tint));
+  box-shadow: var(--ks-shadow);
+}
+.ks-project-hero img { position: relative; width: 100%; height: 100%; object-fit: contain; padding: 40px; }
+.ks-spec { display: grid; gap: 0; margin: 30px 0 0; }
+.ks-spec > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--ks-line);
+}
+.ks-spec dt { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ks-muted); }
+.ks-spec dd { margin: 0; font-size: 0.98rem; font-weight: 600; color: var(--ks-ink); text-align: right; }
+
+/* --------------------------------------------------------------------------
+   Team card
+   -------------------------------------------------------------------------- */
+.ks-team-card { overflow: hidden; padding: 10px; text-align: left; }
+.ks-team-card__photo {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--ks-tint);
+}
+.ks-team-card__photo img {
+  width: 100%;
+  height: 100%;
+  /* Photos arrive in all shapes; framing them from the top keeps faces in view. */
+  object-fit: cover;
+  object-position: center 18%;
+  transition: transform 0.7s var(--ks-ease);
+}
+.ks-team-card:hover .ks-team-card__photo img { transform: scale(1.04); }
+.ks-team-card__initials {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ks-grad);
+  color: #fff;
+  font-size: 3.4rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+.ks-team-card__info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 12px 8px;
+}
+.ks-team-card__name { font-size: 1.05rem; font-weight: 700; line-height: 1.3; color: var(--ks-ink); margin: 0 0 5px; }
+.ks-team-card__role {
+  display: block;
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ks-violet);
+}
+.ks-team-card__social { display: flex; gap: 6px; padding: 0; margin: 0; list-style: none; }
+.ks-team-card__social a {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--ks-tint);
+  color: var(--ks-violet);
+  font-size: 0.85rem;
+  transition: background-color 0.25s, color 0.25s, transform 0.25s var(--ks-ease);
+}
+.ks-team-card__social a:hover { background: var(--ks-grad); color: #fff; transform: translateY(-2px); }
+
+/* Three or fewer people: three columns filling the row (square photos keep the cards
+   from towering), instead of a four-column row with a hole in it. */
+@media (min-width: 992px) {
+  .ks-grid--4:has(> .ks-team-card:last-child:nth-child(-n + 3)) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .ks-grid--4:has(> .ks-team-card:last-child:nth-child(-n + 3)) .ks-team-card__photo { aspect-ratio: 1 / 1; }
+}
+
+/* --------------------------------------------------------------------------
+   "Why us" dark panel, stats, FAQ
+   -------------------------------------------------------------------------- */
+.ks-dark-panel {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--ks-radius-xl);
+  /* The site's main brand gradient, same as the hero and page banners. */
+  background: var(--ks-grad);
+  color: #fff;
+  padding: 72px;
+}
+.ks-dark-panel::before {
+  content: '';
+  position: absolute;
+  width: 560px;
+  height: 560px;
+  right: -180px;
+  top: -220px;
+  border-radius: 50%;
+  background: rgba(184, 74, 245, 0.45);
+  filter: blur(110px);
+  pointer-events: none;
+}
+/* Matching dot grid, so the panel reads as part of the same family as the hero. */
+.ks-dark-panel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.16) 1px, transparent 1px);
+  background-size: 26px 26px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 80% at 15% 20%, #000 10%, transparent 70%);
+  mask-image: radial-gradient(ellipse 70% 80% at 15% 20%, #000 10%, transparent 70%);
+  pointer-events: none;
+}
+.ks-dark-panel > * { position: relative; z-index: 1; }
+.ks-why {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 64px;
+  align-items: start;
+}
+.ks-why .ks-lead { margin: 18px 0 0; }
+
+.ks-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  margin-top: 40px;
+}
+.ks-stat { padding: 22px 0; border-top: 1px solid rgba(255, 255, 255, 0.14); }
+.ks-stat:nth-child(odd) { padding-right: 20px; }
+.ks-stat__num { display: block; font-size: clamp(2rem, 3.4vw, 2.7rem); font-weight: 800; letter-spacing: -0.03em; line-height: 1; color: #fff; font-variant-numeric: tabular-nums; }
+.ks-stat__label { display: block; margin-top: 10px; font-size: 0.88rem; color: rgba(255, 255, 255, 0.7); }
+
+/* Light stats strip (about page) */
+.ks-stats-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  background: #fff;
+  border: 1px solid var(--ks-line);
+  border-radius: var(--ks-radius-lg);
+  box-shadow: var(--ks-shadow-sm);
+}
+.ks-stats-strip .ks-stat { border-top: 0; border-left: 1px solid var(--ks-line); padding: 30px; }
+.ks-stats-strip .ks-stat:first-child { border-left: 0; }
+.ks-stats-strip .ks-stat__num { background: var(--ks-grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.ks-stats-strip .ks-stat__label { color: var(--ks-text); }
+
+.ks-faq { display: flex; flex-direction: column; gap: 12px; }
+.ks-faq__item {
+  border-radius: var(--ks-radius);
+  border: 1px solid var(--ks-line);
+  background: #fff;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.ks-faq__item.is-open { border-color: var(--ks-line-strong); box-shadow: var(--ks-shadow-sm); }
+.ks-faq__q {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  padding: 20px 22px;
+  background: none;
+  border: 0;
+  text-align: left;
+  font-family: var(--ks-font);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ks-ink);
+  cursor: pointer;
+}
+.ks-faq__icon {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: var(--ks-tint);
+  color: var(--ks-purple);
+  font-size: 0.75rem;
+  transition: transform 0.3s var(--ks-ease), background-color 0.3s, color 0.3s;
+}
+.ks-faq__item.is-open .ks-faq__icon { transform: rotate(45deg); background: var(--ks-grad); color: #fff; }
+.ks-faq__a { padding: 0 22px 22px; font-size: 0.93rem; line-height: 1.75; color: var(--ks-text); }
+
+/* FAQ on dark */
+.ks-faq--dark .ks-faq__item { background: rgba(26, 6, 58, 0.22); border-color: rgba(255, 255, 255, 0.18); }
+.ks-faq--dark .ks-faq__item.is-open { background: rgba(26, 6, 58, 0.34); border-color: rgba(255, 255, 255, 0.3); box-shadow: none; }
+.ks-faq--dark .ks-faq__q { color: #fff; }
+.ks-faq--dark .ks-faq__icon { background: rgba(255, 255, 255, 0.16); color: #fff; }
+.ks-faq--dark .ks-faq__a { color: rgba(255, 255, 255, 0.8); }
+.ks-faq--dark .ks-faq__a strong { color: #fff; }
+
+/* --------------------------------------------------------------------------
+   Testimonials
+   -------------------------------------------------------------------------- */
+.ks-testimonials {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: 64px;
+  align-items: center;
+}
+.ks-testimonials__controls { display: flex; align-items: center; gap: 12px; margin-top: 32px; }
+.ks-testimonials__count { margin-left: 8px; font-size: 0.9rem; font-weight: 600; color: var(--ks-muted); font-variant-numeric: tabular-nums; }
+.ks-quote {
+  position: relative;
+  padding: 48px;
+  border-radius: var(--ks-radius-lg);
+  background: #fff;
+  border: 1px solid var(--ks-line);
+  box-shadow: var(--ks-shadow);
+}
+.ks-quote__mark { margin-bottom: 26px; }
+.ks-quote__text {
+  font-size: clamp(1.1rem, 1.6vw, 1.32rem);
+  line-height: 1.7;
+  font-weight: 500;
+  color: var(--ks-ink);
+  margin: 0 0 32px;
+}
+.ks-quote__author { display: flex; align-items: center; gap: 14px; padding-top: 24px; border-top: 1px solid var(--ks-line); }
+.ks-quote__avatar { width: 54px; height: 54px; border-radius: 14px; object-fit: cover; background: var(--ks-tint); }
+.ks-quote__name { font-size: 1rem; font-weight: 700; color: var(--ks-ink); margin: 0; }
+.ks-quote__role { font-size: 0.85rem; color: var(--ks-muted); }
+
+/* --------------------------------------------------------------------------
+   Contact CTA (all pages except /contact)
+   -------------------------------------------------------------------------- */
+.ks-cta {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  border-radius: var(--ks-radius-xl);
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid var(--ks-line);
+  box-shadow: var(--ks-shadow);
+}
+.ks-cta__intro {
+  position: relative;
+  overflow: hidden;
+  padding: 56px;
+  background: var(--ks-grad);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+}
+.ks-cta__intro::after {
+  content: '';
+  position: absolute;
+  width: 340px;
+  height: 340px;
+  right: -140px;
+  bottom: -140px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 0 0 60px rgba(255, 255, 255, 0.04);
+  pointer-events: none;
+}
+.ks-cta__intro > * { position: relative; z-index: 1; }
+.ks-contact-list { list-style: none; padding: 0; margin: 32px 0 0; display: grid; gap: 14px; }
+.ks-contact-list a, .ks-contact-list span.ks-contact-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-decoration: none !important;
+}
+.ks-contact-list .ks-icon-tile { background: rgba(255, 255, 255, 0.14); color: #fff; }
+.ks-contact-list small { display: block; font-size: 0.75rem; font-weight: 500; color: rgba(255, 255, 255, 0.65); }
+
+.ks-offer {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border-radius: var(--ks-radius);
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px dashed rgba(255, 255, 255, 0.4);
+  text-decoration: none !important;
+  color: #fff;
+  transition: background-color 0.25s;
+}
+.ks-offer:hover { color: #fff; background: rgba(255, 255, 255, 0.2); }
+.ks-offer > span { display: flex; flex-direction: column; gap: 4px; }
+.ks-offer > span:first-child {
+  align-items: center;
+  justify-content: center;
+  min-width: 72px;
+  padding: 10px 8px;
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ks-purple);
+}
+.ks-offer > span:first-child .ks-offer__label { color: var(--ks-purple); }
+.ks-offer__value { display: block; font-size: 1.5rem; font-weight: 800; line-height: 1; letter-spacing: -0.02em; }
+.ks-offer__label { display: block; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255, 255, 255, 0.75); }
+.ks-offer__text { font-size: 0.92rem; font-weight: 600; line-height: 1.35; }
+.ks-offer i { margin-left: auto; }
+.ks-offer-spacer { height: 40px; }
+
+.ks-cta__form { padding: 56px; }
+.ks-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.ks-form__full { grid-column: 1 / -1; }
+.ks-label { display: block; margin-bottom: 8px; font-size: 0.82rem; font-weight: 600; color: var(--ks-ink-2); }
+.ks-input {
+  display: block;
+  width: 100%;
+  min-height: 52px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--ks-line);
+  background: var(--ks-field);
+  color: var(--ks-ink);
+  font-family: var(--ks-font);
+  font-size: 0.95rem;
+  transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
+}
+.ks-input::placeholder { color: var(--ks-muted); }
+.ks-input:focus { outline: none; border-color: var(--ks-purple); background: #fff; box-shadow: 0 0 0 4px rgba(141, 24, 208, 0.1); }
+textarea.ks-input { min-height: 132px; resize: vertical; }
+select.ks-input { appearance: auto; }
+.ks-form .alert { border-radius: 12px; }
+
+/* --------------------------------------------------------------------------
+   Contact page
+   -------------------------------------------------------------------------- */
+.ks-contact-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 24px;
+  align-items: start;
+}
+.ks-contact-form-card { padding: 40px; height: auto; box-shadow: var(--ks-shadow-sm); }
+.ks-contact-side .ks-card { height: 100%; }
+.ks-map {
+  overflow: hidden;
+  border-radius: var(--ks-radius-lg);
+  border: 1px solid var(--ks-line);
+  box-shadow: var(--ks-shadow-sm);
+  background: var(--ks-tint);
+}
+.ks-banner {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  margin-top: 80px;
+  padding: 56px;
+  border-radius: var(--ks-radius-xl);
+  background: var(--ks-grad);
+  color: #fff;
+}
+.ks-banner::after {
+  content: '';
+  position: absolute;
+  width: 320px;
+  height: 320px;
+  right: -120px;
+  top: -140px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 0 0 60px rgba(255, 255, 255, 0.04);
+  pointer-events: none;
+}
+.ks-banner > * { position: relative; z-index: 1; }
+
+/* --------------------------------------------------------------------------
+   Footer
+   -------------------------------------------------------------------------- */
+.ks-footer {
+  position: relative;
+  overflow: hidden;
+  margin-top: 0;
+  background: linear-gradient(160deg, #1a063a 0%, #2d0b62 30%, #3d0d7a 55%, #6b12b0 80%, #8d18d0 100%);
+  color: rgba(255, 255, 255, 0.7);
+  border-radius: var(--ks-radius-xl) var(--ks-radius-xl) 0 0;
+}
+.ks-footer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 26px 26px;
+  -webkit-mask-image: linear-gradient(180deg, #000, transparent 55%);
+  mask-image: linear-gradient(180deg, #000, transparent 55%);
+  pointer-events: none;
+}
+.ks-footer > * { position: relative; }
+.ks-footer__cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 64px 0 48px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+.ks-footer__cta-title { font-size: clamp(1.6rem, 3vw, 2.3rem); font-weight: 700; line-height: 1.2; color: #fff; margin: 0; max-width: 620px; }
+.ks-footer__cta-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.ks-footer__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, 1fr));
+  gap: 48px;
+  padding: 56px 0;
+}
+.ks-footer__logo { display: inline-block; }
+.ks-footer__logo img { display: block; width: 200px; height: auto; object-fit: contain; }
+.ks-footer__logo-text { font-family: var(--ks-font-display); font-size: 1.5rem; font-weight: 700; color: #fff; }
+.ks-footer__desc { margin: 18px 0 24px; font-size: 0.92rem; line-height: 1.75; max-width: 340px; color: rgba(255, 255, 255, 0.65); }
+.ks-footer__heading { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #fff; margin: 6px 0 20px; }
+.ks-footer__links { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+.ks-footer__links a { color: rgba(255, 255, 255, 0.65); font-size: 0.92rem; text-decoration: none !important; transition: color 0.2s; }
+.ks-footer__links a:hover { color: #fff; }
+.ks-footer__contact { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+.ks-footer__contact li { display: flex; gap: 12px; align-items: flex-start; font-size: 0.92rem; line-height: 1.55; }
+.ks-footer__contact i { color: var(--ks-lilac); margin-top: 3px; }
+.ks-footer__contact a { color: inherit; text-decoration: none !important; }
+.ks-footer__contact a:hover { color: #fff; }
+.ks-socials { display: flex; flex-wrap: wrap; gap: 10px; }
+.ks-socials a {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #fff;
+  text-decoration: none !important;
+  transition: all 0.25s var(--ks-ease);
+}
+/* Zero-specificity wrapper so the brand-coloured `.social-badge-<platform>:hover` rules in globals.css win. */
+:where(.ks-socials) a:hover { background: #fff; color: var(--ks-purple); transform: translateY(-3px); }
+.ks-footer__bottom {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 22px 0 28px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+.ks-footer__bottom a { color: rgba(255, 255, 255, 0.65); text-decoration: none !important; }
+.ks-footer__bottom a:hover { color: #fff; }
+
+/* --------------------------------------------------------------------------
+   Admin sign-in
+   Sized in relative steps so it holds together from a 320px phone to a wide
+   monitor, and at any browser zoom: nothing here is a fixed pixel width.
+   -------------------------------------------------------------------------- */
+.ks-login {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  min-height: 100vh;
+  min-height: 100svh;
+  background: var(--ks-canvas);
+}
+.ks-login__brand {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: clamp(32px, 4.5vw, 72px);
+  background: var(--ks-grad);
+  color: #fff;
+}
+.ks-login__brand-inner { position: relative; z-index: 1; width: 100%; max-width: 30rem; }
+.ks-login__logo { display: inline-block; margin-bottom: clamp(20px, 3vw, 44px); text-decoration: none !important; }
+.ks-login__logo img { height: clamp(40px, 4vw, 56px); width: auto; object-fit: contain; }
+.ks-login__logo-text { font-family: var(--ks-font-display); font-size: clamp(1.2rem, 2vw, 1.5rem); font-weight: 700; color: #fff; }
+.ks-login__headline { font-size: clamp(1.75rem, 3.4vw, 3rem); margin-bottom: clamp(12px, 1.5vw, 18px); }
+.ks-login__brand .ks-lead { font-size: clamp(0.95rem, 1.2vw, 1.05rem); }
+.ks-login__points { list-style: none; padding: 0; margin: clamp(24px, 3vw, 40px) 0 0; display: grid; gap: clamp(10px, 1.2vw, 14px); }
+.ks-login__points li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: clamp(0.85rem, 1vw, 0.92rem);
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.85);
+}
+.ks-login__points i { flex-shrink: 0; margin-top: 3px; color: var(--ks-lilac); width: 18px; text-align: center; }
+
+.ks-login__panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(16px, 2vw, 22px);
+  padding: clamp(28px, 4vw, 56px) clamp(18px, 3vw, 40px);
+}
+/* Quiet pattern and glow, so the space around the card reads as designed rather than empty. */
+.ks-login__panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(122, 106, 216, 0.22) 1px, transparent 1px);
+  background-size: 22px 22px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 50%, #000, transparent 75%);
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 50%, #000, transparent 75%);
+  opacity: 0.7;
+  pointer-events: none;
+}
+.ks-login__panel > * { position: relative; z-index: 1; }
+.ks-login__card {
+  width: 100%;
+  /* Grows a little on roomy screens so it never looks lost in the space beside the brand panel. */
+  max-width: clamp(27rem, 34vw, 31rem);
+  padding: clamp(24px, 2.4vw, 44px);
+  border-radius: var(--ks-radius-lg);
+  background: var(--ks-surface);
+  border: 1px solid var(--ks-line);
+  box-shadow: var(--ks-shadow);
+}
+.ks-login__card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 4px; }
+.ks-login__card-head .ks-eyebrow { margin: 0; }
+.ks-login__title { font-size: clamp(1.45rem, 2vw, 1.7rem); }
+.ks-login__subtitle { margin: 8px 0 26px; }
+.ks-login__field { margin-bottom: 18px; }
+.ks-login__password { position: relative; }
+/* Edge draws its own reveal eye inside password fields, which doubled up with ours. */
+input[type='password']::-ms-reveal,
+input[type='password']::-ms-clear { display: none; }
+.ks-login__password .ks-input { padding-right: 52px; }
+.ks-login__reveal {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  min-height: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--ks-muted);
+  cursor: pointer;
+  transition: color 0.2s, background-color 0.2s;
+}
+.ks-login__reveal:hover { color: var(--ks-purple); background: var(--ks-tint); }
+.ks-login__error {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(220, 53, 69, 0.07);
+  border: 1px solid rgba(220, 53, 69, 0.25);
+  color: #b02a37;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.ks-login__error i { margin-top: 2px; }
+.ks-login__notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(141, 24, 208, 0.07);
+  border: 1px solid rgba(141, 24, 208, 0.2);
+  color: var(--ks-purple);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+.ks-login__notice i { margin-top: 2px; }
+.ks-login__hint { display: flex; align-items: center; gap: 6px; margin: 8px 0 0; font-size: 0.82rem; color: var(--ks-violet); }
+.ks-input--invalid, .ks-input--invalid:focus { border-color: #dc3545; box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.1); }
+.ks-field-error { display: flex; align-items: flex-start; gap: 6px; margin: 8px 0 0; font-size: 0.82rem; line-height: 1.45; color: #dc3545; }
+.ks-field-error i { margin-top: 3px; }
+.ks-req { color: #dc3545; font-weight: 700; }
+.ks-login__note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 24px 0 0;
+  padding-top: 20px;
+  border-top: 1px solid var(--ks-line);
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--ks-muted);
+}
+.ks-login__note i { margin-top: 3px; }
+.ks-login__foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 16px; text-align: center; }
+.ks-login__foot .ks-link { font-size: 0.88rem; }
+
+/* Stacked once there isn't room for two columns: the brand panel takes only the height it
+   needs and the form becomes a white sheet filling the rest of the screen, so there is no
+   empty strip under the card whatever the device height is. */
+@media (max-width: 991px) {
+  .ks-login { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .ks-login__brand { justify-content: flex-start; padding: clamp(28px, 6vw, 48px) clamp(18px, 5vw, 32px); }
+  .ks-login__brand-inner { max-width: none; }
+  .ks-login__panel {
+    align-items: stretch;
+    gap: 0;
+    padding: 0;
+    margin-top: -18px;
+    background: var(--ks-surface);
+    border-radius: var(--ks-radius-lg) var(--ks-radius-lg) 0 0;
+  }
+  .ks-login__panel::before { display: none; }
+  .ks-login__card {
+    max-width: 30rem;
+    width: 100%;
+    margin: 0 auto;
+    padding: clamp(26px, 6vw, 40px) clamp(20px, 5vw, 32px) 12px;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ks-login__foot { width: 100%; max-width: 30rem; margin: auto auto 0; padding: 18px clamp(20px, 5vw, 32px) 26px; }
+}
+
+/* Where there is height to spare (tall phones, tablets), centre the form in the sheet instead
+   of leaving it at the top; on short screens it stays at the top where it belongs. */
+@media (min-width: 768px) and (max-width: 991px), (min-height: 760px) and (max-width: 991px) {
+  .ks-login__card { margin-block: auto; }
+  .ks-login__foot { margin-top: 0; }
+}
+
+/* Landscape phones and small laptop windows: trim the vertical spacing so the form stays in view. */
+@media (max-height: 720px) and (min-width: 992px) {
+  .ks-login__logo { margin-bottom: 16px; }
+  .ks-login__points { margin-top: 20px; gap: 8px; }
+  .ks-login__card { padding: 24px; }
+  .ks-login__field { margin-bottom: 14px; }
+  .ks-login__note { margin-top: 18px; padding-top: 16px; }
+}
+/* Phones, and anything short: the brand panel becomes a slim header so the form is the
+   first thing on screen and the Sign in button is reachable without scrolling. */
+@media (max-width: 767px), (max-height: 640px) and (max-width: 1199px) {
+  .ks-login__brand { padding: 16px clamp(16px, 4vw, 24px); align-items: center; }
+  .ks-login__brand-inner { display: flex; align-items: center; gap: 14px; }
+  .ks-login__logo { margin: 0; flex-shrink: 0; }
+  .ks-login__logo img { height: 34px; }
+  .ks-login__headline { margin: 0; font-size: clamp(1.1rem, 4vw, 1.35rem); }
+  .ks-login__brand .ks-lead, .ks-login__points { display: none; }
+  .ks-login__panel { justify-content: flex-start; padding-top: clamp(20px, 4vw, 28px); }
+}
+
+/* Very short viewports (landscape phones, heavy browser zoom): drop the advisory text so the
+   form itself always fits. */
+/* Middle tier: short laptop windows and zoomed-in browsers. */
+@media (max-height: 620px) {
+  .ks-login__panel { padding-top: 18px; }
+  .ks-login__subtitle { display: none; }
+  .ks-login__card-head { margin-bottom: 16px; }
+  .ks-login__field { margin-bottom: 14px; }
+  .ks-login__note { margin-top: 16px; padding-top: 14px; }
+}
+
+@media (max-height: 440px) {
+  .ks-login__panel { padding-top: 12px; gap: 10px; }
+  .ks-login__card { padding: 16px; }
+  .ks-login__subtitle, .ks-login__note { display: none; }
+  .ks-login__card-head .ks-eyebrow, .ks-login__card-head .ks-chip { display: none; }
+  .ks-login__card-head { margin-bottom: 10px; }
+  .ks-login .ks-label { margin-bottom: 5px; }
+  .ks-login__field { margin-bottom: 10px; }
+  .ks-login .ks-input { min-height: 44px; padding: 10px 14px; }
+  .ks-login .ks-btn { min-height: 46px; }
+}
+
+/* Narrow phones. */
+@media (max-width: 380px) {
+  .ks-login__card { padding: 20px 16px; }
+  .ks-login__card-head { flex-direction: column; gap: 6px; }
+  .ks-login__headline { font-size: 1.6rem; }
+}
+
+/* Very wide screens: hold the two halves in proportion instead of letting the form drift. */
+@media (min-width: 1600px) {
+  .ks-login { grid-template-columns: minmax(0, 1fr) minmax(0, 0.95fr); }
+}
+
+/* --------------------------------------------------------------------------
+   Floating buttons
+   -------------------------------------------------------------------------- */
+.ks-fab {
+  position: fixed;
+  right: 24px;
+  z-index: 999;
+  width: 54px;
+  height: 54px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  border: 0;
+  color: #fff;
+  cursor: pointer;
+  text-decoration: none !important;
+  transition: transform 0.25s var(--ks-ease), opacity 0.25s, visibility 0.25s;
+}
+.ks-fab:hover { color: #fff; transform: translateY(-3px); }
+.ks-fab--whatsapp { bottom: 24px; background: var(--ks-whatsapp); font-size: 1.6rem; box-shadow: 0 12px 26px rgba(37, 211, 102, 0.35); }
+.ks-fab--top { bottom: 90px; background: var(--ks-grad); font-size: 1rem; box-shadow: var(--ks-shadow-btn); opacity: 0; visibility: hidden; }
+.ks-fab--top.is-visible { opacity: 1; visibility: visible; }
+
+/* --------------------------------------------------------------------------
+   Blog
+   -------------------------------------------------------------------------- */
+.ks-post-card { overflow: hidden; }
+.ks-post-card__media { position: relative; display: block; aspect-ratio: 16 / 10; overflow: hidden; background: var(--ks-tint); }
+.ks-post-card__media img { object-fit: cover; transition: transform 0.6s var(--ks-ease); }
+.ks-post-card:hover .ks-post-card__media img { transform: scale(1.05); }
+.ks-post-card__media .ks-chip { position: absolute; left: 16px; top: 16px; z-index: 1; }
+.ks-post-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; font-size: 0.82rem; color: var(--ks-muted); margin-bottom: 12px; }
+.ks-post-meta i { color: var(--ks-violet); margin-right: 5px; }
+.ks-post-card .ks-card__title a { color: inherit; text-decoration: none !important; transition: color 0.2s; }
+.ks-post-card .ks-card__title a:hover { color: var(--ks-purple); }
+.ks-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.ks-stat-inline { display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--ks-muted); }
+.ks-stat-inline i { color: var(--ks-violet); }
+
+.ks-featured-post {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  overflow: hidden;
+  margin-bottom: 40px;
+}
+.ks-featured-post .ks-post-card__media { aspect-ratio: auto; min-height: 380px; }
+.ks-featured-post .ks-card__body { padding: 44px; justify-content: center; }
+.ks-featured-post .ks-card__title { font-size: clamp(1.4rem, 2.4vw, 1.9rem); line-height: 1.25; margin-bottom: 14px; }
+
+/* Article page */
+.ks-article-hero { padding-bottom: 160px; }
+.ks-article-hero .ks-page-hero__inner { max-width: 860px; }
+/* Post titles stay in Inter (as before); Conthrax is kept for page and hero titles. */
+.ks-article-hero .ks-page-hero__title { font-family: var(--ks-font); font-weight: 800; font-size: clamp(2rem, 3.8vw, 3rem); letter-spacing: -0.02em; line-height: 1.2; }
+.ks-article-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; font-size: 0.9rem; color: rgba(255, 255, 255, 0.8); }
+.ks-article-meta i { margin-right: 6px; }
+.ks-article-cover {
+  position: relative;
+  margin-top: -120px;
+  border-radius: var(--ks-radius-lg);
+  overflow: hidden;
+  border: 6px solid #fff;
+  box-shadow: var(--ks-shadow-lg);
+  background: var(--ks-tint);
+}
+.ks-article-cover img { width: 100%; height: auto; max-height: 520px; object-fit: cover; display: block; }
+.ks-article-cover__placeholder {
+  height: 360px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ks-grad);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 4rem;
+}
+.ks-article { max-width: 780px; margin: 0 auto; }
+.ks-article-author {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 22px 0;
+  margin: 40px 0 44px;
+  border-top: 1px solid var(--ks-line);
+  border-bottom: 1px solid var(--ks-line);
+}
+.ks-article-author__avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ks-grad);
+  color: #fff;
+  font-size: 1.1rem;
+}
+.ks-article-author strong { display: block; color: var(--ks-ink); font-size: 1rem; }
+.ks-article-author span { font-size: 0.85rem; color: var(--ks-muted); }
+.ks-article-author__stats { margin-left: auto; display: flex; gap: 18px; }
+.ks-article-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-top: 48px;
+  padding: 24px 28px;
+  border-radius: var(--ks-radius);
+  background: #fff;
+  border: 1px solid var(--ks-line);
+}
+.ks-article-actions__like { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+.ks-article-actions .like-btn { border-radius: 12px; }
+/* ShareButtons carries its own top rule and spacing for standalone use. */
+.ks-article-actions > div:last-child { margin-top: 0 !important; padding-top: 0 !important; border-top: 0 !important; }
+.ks-postnav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 40px; }
+.ks-postnav a {
+  display: block;
+  padding: 22px 24px;
+  border-radius: var(--ks-radius);
+  background: #fff;
+  border: 1px solid var(--ks-line);
+  text-decoration: none !important;
+  transition: border-color 0.25s, transform 0.25s var(--ks-ease);
+}
+.ks-postnav a:hover { border-color: var(--ks-line-strong); transform: translateY(-3px); }
+.ks-postnav small { display: block; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ks-purple); margin-bottom: 8px; }
+.ks-postnav span { font-size: 1rem; font-weight: 600; color: var(--ks-ink); line-height: 1.4; }
+.ks-postnav .is-next { text-align: right; }
+
+/* --------------------------------------------------------------------------
+   404
+   -------------------------------------------------------------------------- */
+.ks-404 { text-align: center; padding: calc(var(--ks-header-h) + 100px) 0 120px; background: var(--ks-grad); color: #fff; border-radius: 0 0 var(--ks-radius-xl) var(--ks-radius-xl); position: relative; overflow: hidden; }
+.ks-404::before { content: ''; position: absolute; inset: 0; background-image: radial-gradient(rgba(255, 255, 255, 0.16) 1px, transparent 1px); background-size: 26px 26px; -webkit-mask-image: radial-gradient(ellipse at center, #000 20%, transparent 70%); mask-image: radial-gradient(ellipse at center, #000 20%, transparent 70%); }
+.ks-404 > * { position: relative; }
+.ks-404__code { font-family: var(--ks-font-display); font-size: clamp(6rem, 18vw, 11rem); font-weight: 700; line-height: 1; letter-spacing: -0.04em; color: rgba(255, 255, 255, 0.95); text-shadow: 0 20px 60px rgba(26, 6, 58, 0.35); }
+.ks-404 .ks-lead { max-width: 560px; margin: 18px auto 34px; }
+
+/* --------------------------------------------------------------------------
+   Motion
+   Individual transform properties (translate / scale) are used for entrance
+   and parallax so they combine with the `transform` used by hover and
+   looping animations instead of overriding them.
+   -------------------------------------------------------------------------- */
+@keyframes ks-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
+@keyframes ks-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@keyframes ks-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes ks-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ks-fade-up { from { opacity: 0; translate: 0 12px; } to { opacity: 1; translate: 0 0; } }
+@keyframes ks-rise { from { opacity: 0; translate: 0 22px; } to { opacity: 1; translate: 0 0; } }
+@keyframes ks-drop-in { from { opacity: 0; translate: 0 -24px; } to { opacity: 1; translate: 0 0; } }
+@keyframes ks-word-up { from { opacity: 0; transform: translateY(105%) rotate(5deg); } to { opacity: 1; transform: none; } }
+@keyframes ks-zoom-in { from { opacity: 0; scale: 0.9; } to { opacity: 1; scale: 1; } }
+@keyframes ks-pop-in { from { opacity: 0; scale: 0.6; } 70% { scale: 1.04; } to { opacity: 1; scale: 1; } }
+@keyframes ks-spin { to { rotate: 360deg; } }
+@keyframes ks-glow { 0%, 100% { opacity: 0.75; scale: 0.94; } 50% { opacity: 1; scale: 1.06; } }
+@keyframes ks-drift-1 { from { transform: translate(0, 0) scale(1); } to { transform: translate(-90px, 70px) scale(1.15); } }
+@keyframes ks-drift-2 { from { transform: translate(0, 0) scale(1); } to { transform: translate(110px, -60px) scale(1.1); } }
+@keyframes ks-drift-3 { from { transform: translate(0, 0) scale(0.9); } to { transform: translate(-70px, -50px) scale(1.2); } }
+@keyframes ks-dots-pan { to { background-position: 280px 140px; } }
+@keyframes ks-type { 0% { transform: scaleX(0); } 18%, 82% { transform: scaleX(1); } 100% { transform: scaleX(0); } }
+@keyframes ks-progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes ks-grow-x { to { transform: scaleX(1); } }
+@keyframes ks-reveal-up { from { opacity: 0; translate: 0 36px; } to { opacity: 1; translate: 0 0; } }
+@keyframes ks-reveal-zoom { from { opacity: 0; scale: 0.94; } to { opacity: 1; scale: 1; } }
+@keyframes ks-reveal-left { from { opacity: 0; translate: -48px 0; } to { opacity: 1; translate: 0 0; } }
+@keyframes ks-reveal-right { from { opacity: 0; translate: 48px 0; } to { opacity: 1; translate: 0 0; } }
+@keyframes ks-line-grow { from { width: 0; } }
+@keyframes ks-ping { 0% { transform: scale(1); opacity: 0.7; } 80%, 100% { transform: scale(1.7); opacity: 0; } }
+@keyframes ks-sheen { 0% { transform: translateX(-120%); } 30%, 100% { transform: translateX(120%); } }
+
+/* Both remount (React key) when the selection changes, so these play on every switch. */
+.ks-quote, .ks-explorer__panel { animation: ks-fade-up 0.55s var(--ks-ease); }
+
+/* Scroll reveal. motion-effects.tsx marks what is already on screen as done, watches the rest,
+   and only then adds .ks-reveal-ready, so nothing is hidden without JavaScript or flickers on load. */
+html.ks-reveal-ready [data-reveal]:not([data-revealed]):not([data-reveal-done]) { opacity: 0; }
+html.ks-reveal-ready [data-reveal='stagger']:not([data-revealed]):not([data-reveal-done]) { opacity: 1; }
+html.ks-reveal-ready [data-reveal='stagger']:not([data-revealed]):not([data-reveal-done]) > * { opacity: 0; }
+[data-reveal][data-revealed] { animation: ks-reveal-up 0.9s var(--ks-ease) var(--reveal-delay, 0ms) backwards; }
+[data-reveal='zoom'][data-revealed] { animation-name: ks-reveal-zoom; }
+[data-reveal='left'][data-revealed] { animation-name: ks-reveal-left; }
+[data-reveal='right'][data-revealed] { animation-name: ks-reveal-right; }
+[data-reveal='fade'][data-revealed] { animation-name: ks-fade; }
+[data-reveal='stagger'][data-revealed] { animation: none; }
+[data-reveal='stagger'][data-revealed] > * { animation: ks-reveal-up 0.8s var(--ks-ease) backwards; }
+[data-reveal='stagger'][data-revealed] > :nth-child(2) { animation-delay: 0.09s; }
+[data-reveal='stagger'][data-revealed] > :nth-child(3) { animation-delay: 0.18s; }
+[data-reveal='stagger'][data-revealed] > :nth-child(4) { animation-delay: 0.27s; }
+[data-reveal='stagger'][data-revealed] > :nth-child(5) { animation-delay: 0.36s; }
+[data-reveal='stagger'][data-revealed] > :nth-child(6) { animation-delay: 0.45s; }
+[data-reveal='stagger'][data-revealed] > :nth-child(n + 7) { animation-delay: 0.54s; }
+@media print {
+  html.ks-reveal-ready [data-reveal], html.ks-reveal-ready [data-reveal] > * { opacity: 1 !important; animation: none !important; }
+}
+/* Section titles: the eyebrow rule draws itself in. */
+.ks-head[data-revealed] .ks-eyebrow::before { animation: ks-line-grow 0.8s var(--ks-ease) 0.25s backwards; }
+
+/* Filter change: the new set of cards pops in, staggered along the row. */
+.ks-grid.is-filtering > * { animation: ks-reveal-zoom 0.55s var(--ks-ease) var(--reveal-delay, 0ms) backwards; }
+
+/* Buttons: light sweep on hover, slight press on click, moving gradient on primary. */
+.ks-btn { position: relative; overflow: hidden; isolation: isolate; }
+.ks-btn::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 45%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  transform: translateX(-160%) skewX(-20deg);
+  transition: transform 0.8s var(--ks-ease);
+  pointer-events: none;
+}
+.ks-btn:hover::after { transform: translateX(330%) skewX(-20deg); }
+.ks-btn--light::after, .ks-btn--outline::after { background: linear-gradient(100deg, transparent, rgba(141, 24, 208, 0.14), transparent); }
+.ks-btn:active { scale: 0.97; }
+.ks-btn--primary {
+  background: linear-gradient(135deg, #8D18D0 0%, #3930C7 50%, #8D18D0 100%);
+  background-size: 200% 100%;
+  transition: transform 0.25s var(--ks-ease), box-shadow 0.25s var(--ks-ease), background-position 0.7s var(--ks-ease), scale 0.15s;
+}
+.ks-btn--primary:hover { background-position: 100% 0; }
+
+/* Text links: underline draws in. */
+.ks-link {
+  background: linear-gradient(currentColor, currentColor) 0 100% / 0 1.5px no-repeat;
+  padding-bottom: 2px;
+  transition: color 0.2s, background-size 0.4s var(--ks-ease);
+}
+.ks-link:hover { background-size: 100% 1.5px; }
+
+/* Badge: a sheen passes over it now and then; the dot pings. */
+.ks-badge { position: relative; overflow: hidden; }
+.ks-badge::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.3) 50%, transparent 70%);
+  transform: translateX(-120%);
+  animation: ks-sheen 6s ease-in-out 2.2s infinite;
+  pointer-events: none;
+}
+.ks-badge__dot { position: relative; }
+.ks-badge__dot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--ks-green);
+  animation: ks-ping 2.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Cards: gradient outline and a soft glow that follows the pointer (--mx/--my from motion-effects.tsx). */
+.ks-card--hover::before {
+  content: '';
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(141, 24, 208, 0.9), rgba(57, 48, 199, 0.5), rgba(192, 132, 252, 0.9));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+.ks-card--hover::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 0%), rgba(141, 24, 208, 0.08), transparent 45%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+.ks-card--hover:hover::before, .ks-card--hover:hover::after { opacity: 1; }
+.ks-card--hover > * { position: relative; z-index: 1; }
+.ks-icon-tile { transition: transform 0.5s var(--ks-ease), background-color 0.3s, color 0.3s; }
+.ks-card--hover:hover .ks-icon-tile { transform: rotate(-8deg) scale(1.08); }
+
+/* FAQ: answers slide open instead of jumping. */
+.ks-faq__panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  visibility: hidden;
+  transition: grid-template-rows 0.45s var(--ks-ease), visibility 0s linear 0.45s;
+}
+.ks-faq__item.is-open .ks-faq__panel {
+  grid-template-rows: 1fr;
+  visibility: visible;
+  transition: grid-template-rows 0.45s var(--ks-ease), visibility 0s;
+}
+.ks-faq__panel > div { overflow: hidden; }
+.ks-faq__a { opacity: 0; translate: 0 -8px; transition: opacity 0.3s ease, translate 0.45s var(--ks-ease); }
+.ks-faq__item.is-open .ks-faq__a { opacity: 1; translate: 0 0; transition-delay: 0.08s; }
+
+/* Service explorer: the new panel's parts come in one after another. */
+.ks-explorer__panel > .ks-icon-tile { animation: ks-pop-in 0.6s var(--ks-ease) 0.05s backwards; }
+.ks-explorer__panel > .ks-explorer__panel-title { animation: ks-rise 0.6s var(--ks-ease) 0.08s backwards; }
+.ks-explorer__panel > .ks-card__text { animation: ks-rise 0.6s var(--ks-ease) 0.14s backwards; }
+.ks-explorer__panel > .ks-explorer__actions { animation: ks-rise 0.6s var(--ks-ease) 0.35s backwards; }
+.ks-explorer__panel .ks-checklist li { animation: ks-rise 0.5s var(--ks-ease) backwards; animation-delay: calc(0.2s + var(--i, 0) * 0.05s); }
+.ks-explorer__tab .ks-icon-tile { transition: transform 0.4s var(--ks-ease), background-color 0.3s, color 0.3s; }
+.ks-explorer__tab:hover .ks-icon-tile { transform: scale(1.1) rotate(-6deg); }
+
+/* Testimonials: quote parts arrive in sequence; a bar shows time until the next quote. */
+.ks-quote__mark { animation: ks-pop-in 0.6s var(--ks-ease) 0.1s backwards; }
+.ks-quote__author { animation: ks-rise 0.6s var(--ks-ease) 0.2s backwards; }
+.ks-testimonials__progress {
+  position: relative;
+  width: 120px;
+  height: 3px;
+  margin-left: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--ks-line-strong);
+}
+.ks-testimonials__progress span {
+  position: absolute;
+  inset: 0;
+  background: var(--ks-grad);
+  transform-origin: 0 50%;
+  animation: ks-progress var(--autoplay, 7s) linear forwards;
+}
+.ks-testimonials:has(.ks-quote:hover) .ks-testimonials__progress span,
+.ks-testimonials:has(:focus-visible) .ks-testimonials__progress span { animation-play-state: paused; }
+
+/* Footer & floating buttons. */
+.ks-footer__links a { display: inline-block; transition: color 0.2s, transform 0.3s var(--ks-ease); }
+.ks-footer__links a:hover { transform: translateX(4px); }
+.ks-fab--whatsapp { animation: ks-pop-in 0.6s var(--ks-ease) 1.2s backwards; }
+.ks-fab--whatsapp::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  border-radius: inherit;
+  background: rgba(37, 211, 102, 0.55);
+  animation: ks-ping 2.6s cubic-bezier(0, 0, 0.2, 1) 2s infinite;
+}
+.ks-mobile-menu.is-open li, .ks-mobile-menu.is-open > .ks-btn { animation: ks-rise 0.45s var(--ks-ease) backwards; }
+.ks-mobile-menu.is-open li:nth-child(2) { animation-delay: 0.03s; }
+.ks-mobile-menu.is-open li:nth-child(3) { animation-delay: 0.06s; }
+.ks-mobile-menu.is-open li:nth-child(4) { animation-delay: 0.09s; }
+.ks-mobile-menu.is-open li:nth-child(5) { animation-delay: 0.12s; }
+.ks-mobile-menu.is-open li:nth-child(6) { animation-delay: 0.15s; }
+.ks-mobile-menu.is-open li:nth-child(7) { animation-delay: 0.18s; }
+.ks-mobile-menu.is-open > .ks-btn { animation-delay: 0.22s; }
+
+/* Article cover and 404 arrive on load. */
+.ks-article-cover { animation: ks-reveal-zoom 1s var(--ks-ease) 0.3s backwards; }
+.ks-404 .ks-container > * { animation: ks-rise 0.8s var(--ks-ease) backwards; }
+.ks-404 .ks-container > :nth-child(2) { animation: ks-zoom-in 1s var(--ks-ease) 0.1s backwards, ks-float 6s ease-in-out 1.2s infinite; }
+.ks-404 .ks-container > :nth-child(3) { animation-delay: 0.25s; }
+.ks-404 .ks-container > :nth-child(4) { animation-delay: 0.4s; }
+.ks-404 .ks-container > :nth-child(5) { animation-delay: 0.55s; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0s !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  /* No autoplay (it is driven by these animations finishing), no typing lines, no parallax. */
+  .ks-hero__dot-fill, .ks-testimonials__progress span, .ks-hero__code-line { animation: none !important; }
+  .ks-scroll-progress { display: none; }
+  .ks-hero__stage { transform: none !important; }
+  .ks-hero__image, .ks-hero__float, .ks-hero__ring, .ks-hero__code { translate: none !important; }
+}
+
+:focus-visible { outline: 2px solid var(--ks-purple); outline-offset: 3px; }
+.ks-hero :focus-visible, .ks-page-hero :focus-visible, .ks-footer :focus-visible, .ks-header :focus-visible, .ks-cta__intro :focus-visible { outline-color: #fff; }
+
+/* --------------------------------------------------------------------------
+   Responsive
+   -------------------------------------------------------------------------- */
+@media (max-width: 1199px) {
+  .ks-nav a { padding: 10px 12px; }
+  .ks-hero__float--a { left: 0; }
+  .ks-hero__float--b { right: 0; }
+  .ks-dark-panel { padding: 56px; }
+  .ks-footer__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 991px) {
+  :root { --ks-header-h: 76px; }
+  .ks-section { padding: 80px 0; }
+  .ks-header { padding: 12px 0; }
+  .ks-header::before { opacity: 1; }
+  .ks-header.is-scrolled { padding: 10px 0; }
+  .ks-logo img, .ks-header.is-scrolled .ks-logo img { height: 46px; }
+  .ks-nav, .ks-header__cta { display: none; }
+  .ks-burger { display: inline-flex; }
+  .ks-mobile-menu {
+    display: block;
+    position: absolute;
+    left: var(--ks-gutter);
+    right: var(--ks-gutter);
+    top: calc(100% + 8px);
+    padding: 12px;
+    border-radius: var(--ks-radius);
+    background: #fff;
+    box-shadow: var(--ks-shadow-lg);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px);
+    transition: all 0.25s var(--ks-ease);
+  }
+  .ks-mobile-menu.is-open { opacity: 1; visibility: visible; transform: none; }
+  .ks-mobile-menu ul { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 2px; }
+  .ks-mobile-menu a.ks-mobile-link {
+    display: block;
+    padding: 13px 14px;
+    border-radius: 10px;
+    color: var(--ks-ink);
+    font-weight: 500;
+    text-decoration: none !important;
+  }
+  .ks-mobile-menu a.ks-mobile-link.is-active { background: var(--ks-grad); color: #fff; font-weight: 600; }
+  .ks-mobile-menu a.ks-mobile-link:hover:not(.is-active) { background: var(--ks-tint); }
+
+  .ks-hero { padding-top: calc(var(--ks-header-h) + 48px); }
+  /* Stacked: keep copy and picture together; a shorter slide leaves its spare space at the bottom. */
+  .ks-hero__slide { grid-template-columns: 1fr; gap: 44px; align-content: start; }
+  .ks-hero__stage { max-width: 520px; width: 100%; margin: 0 auto; }
+  .ks-marquee { margin-top: 56px; }
+  .ks-page-hero { padding: calc(var(--ks-header-h) + 56px) 0 72px; }
+  .ks-page-hero__rings { opacity: 0.6; right: -260px; }
+
+  .ks-head { grid-template-columns: 1fr; gap: 16px; margin-bottom: 40px; }
+  .ks-grid, .ks-grid--4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ks-split, .ks-why, .ks-testimonials, .ks-explorer, .ks-cta, .ks-featured-post, .ks-contact-layout { grid-template-columns: 1fr; }
+  .ks-split { gap: 44px; }
+  .ks-banner { padding: 40px; }
+  .ks-why, .ks-testimonials { gap: 44px; }
+  .ks-explorer__list { flex-direction: row; overflow-x: auto; padding-bottom: 6px; scrollbar-width: none; }
+  .ks-explorer__list::-webkit-scrollbar { display: none; }
+  .ks-explorer__tab { min-width: 260px; }
+  .ks-explorer__tab:hover { transform: none; }
+  .ks-featured-post .ks-post-card__media { min-height: 260px; }
+  .ks-stats-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ks-stats-strip .ks-stat:nth-child(3) { border-left: 0; }
+  .ks-stats-strip .ks-stat:nth-child(n + 3) { border-top: 1px solid var(--ks-line); }
+}
+
+@media (max-width: 767px) {
+  :root { --ks-gutter: 18px; }
+  .ks-section { padding: 64px 0; }
+  .ks-grid, .ks-grid--2, .ks-grid--4 { grid-template-columns: 1fr; }
+  /* Team stays two-up on phones: one column of tall portraits makes the section endless. */
+  .ks-grid:has(> .ks-team-card) { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .ks-team-card__photo { aspect-ratio: 1 / 1; }
+  .ks-team-card { padding: 8px; }
+  .ks-team-card__info { flex-direction: column; align-items: flex-start; gap: 10px; padding: 14px 6px 6px; }
+  .ks-team-card__name { font-size: 0.95rem; }
+  .ks-team-card__role { font-size: 0.68rem; }
+  .ks-team-card__social a { width: 30px; height: 30px; font-size: 0.78rem; }
+  .ks-hero, .ks-page-hero, .ks-404 { border-radius: 0 0 var(--ks-radius-lg) var(--ks-radius-lg); }
+  .ks-hero__title { font-size: clamp(2.1rem, 9vw, 2.8rem); }
+  /* Slides share one height; capping long descriptions keeps a short slide from leaving a big gap. */
+  .ks-hero__desc { display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
+  .ks-hero__stage { max-width: 340px; }
+  .ks-hero__actions .ks-btn { flex: 1 1 100%; }
+  .ks-hero__stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; width: 100%; }
+  .ks-hero__stat { padding: 0 0 0 14px; margin: 0; border-right: 0; border-left: 2px solid rgba(255, 255, 255, 0.25); }
+  .ks-hero__stat:last-child { padding-left: 14px; }
+  .ks-hero__controls { margin-left: 0; }
+  .ks-hero__stat-num { font-size: 1.5rem; }
+  .ks-hero__float { font-size: 0.78rem; padding: 10px 12px 10px 10px; }
+  .ks-hero__float .ks-icon-tile { width: 36px; height: 36px; font-size: 0.9rem; }
+  .ks-hero__float--a { left: -4px; top: 6%; }
+  .ks-hero__float--b { right: -4px; bottom: 6%; }
+  .ks-hero__code { display: none; }
+  .ks-marquee__item { font-size: 1.05rem; padding: 20px 18px; }
+  .ks-blob--1 { width: 360px; height: 360px; }
+  .ks-blob--2 { width: 320px; height: 320px; }
+  .ks-blob--3 { width: 240px; height: 240px; }
+  .ks-page-hero__title { font-size: clamp(2rem, 8.5vw, 2.6rem); }
+  .ks-explorer__panel, .ks-quote { padding: 28px; }
+  .ks-checklist--2 { grid-template-columns: 1fr; }
+  .ks-dark-panel { padding: 36px 24px; border-radius: var(--ks-radius-lg); }
+  .ks-cta { border-radius: var(--ks-radius-lg); }
+  .ks-cta__intro, .ks-cta__form { padding: 32px 24px; }
+  .ks-contact-form-card { padding: 26px 20px; }
+  .ks-banner { padding: 32px 24px; border-radius: var(--ks-radius-lg); margin-top: 56px; }
+  .ks-banner .ks-btn { flex: 1 1 100%; }
+  .ks-form { grid-template-columns: 1fr; }
+  /* Under 16px, iOS Safari zooms the page when a field is focused. */
+  .ks-input { font-size: 16px; }
+  .ks-footer { border-radius: var(--ks-radius-lg) var(--ks-radius-lg) 0 0; }
+  .ks-footer__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 36px 20px; }
+  .ks-footer__grid > :first-child, .ks-footer__grid > :last-child { grid-column: 1 / -1; }
+  .ks-footer__cta { padding: 48px 0 36px; }
+  .ks-footer__cta-actions { width: 100%; }
+  .ks-footer__cta-actions .ks-btn { flex: 1 1 auto; }
+  .ks-stats-strip .ks-stat { padding: 22px; }
+  .ks-postnav { grid-template-columns: 1fr; }
+  .ks-postnav .is-next { text-align: left; }
+  .ks-featured-post .ks-card__body { padding: 28px; }
+  .ks-article-author__stats { margin-left: 0; width: 100%; }
+  .ks-article-cover { border-width: 4px; margin-top: -96px; }
+  .ks-fab { right: 16px; width: 50px; height: 50px; }
+  .ks-fab--whatsapp { bottom: 16px; }
+  .ks-fab--top { bottom: 76px; }
+}

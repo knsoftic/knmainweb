@@ -8,7 +8,9 @@
     "build": "echo 'No build required for backend'",
     "dev": "nodemon server.js",
     "migrate": "node migrate.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node test/api.test.js && node test/migrate.test.js",
+    "create-admin": "node create-admin.js",
+    "cleanup-course-categories": "node cleanup-course-categories.js"
   },
   "keywords": [],
   "author": "",

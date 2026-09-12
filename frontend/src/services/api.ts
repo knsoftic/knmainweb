@@ -7,181 +7,148 @@ const getAuthHeaders = (): Record<string, string> => {
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
-let isRefreshing = false;
-let refreshSubscribers: ((token: string) => void)[] = [];
+const SESSION_EXPIRED = 'Your session has expired. Please log in again.';
 
-const subscribeTokenRefresh = (cb: (token: string) => void) => {
-  refreshSubscribers.push(cb);
-};
+// One refresh at a time; requests that hit a 401 meanwhile wait for the same one.
+let refreshPromise: Promise<void> | null = null;
 
-const onRefreshed = (token: string) => {
-  refreshSubscribers.forEach((cb) => cb(token));
-  refreshSubscribers = [];
-};
-
-const handleUnauthorized = async (originalRequest: () => Promise<any>) => {
-  if (typeof window === 'undefined') {
-    throw new Error('Unauthorized');
-  }
-
-  if (!isRefreshing) {
-    isRefreshing = true;
-    try {
+const refreshAccessToken = () => {
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
       const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
         method: 'POST',
         credentials: 'include',
       });
-      
       if (!res.ok) throw new Error('Refresh failed');
-      
       const data = await res.json();
       sessionStorage.setItem('admin_token', data.token);
-      
-      isRefreshing = false;
-      onRefreshed(data.token);
-    } catch (err) {
-      isRefreshing = false;
-      sessionStorage.removeItem('admin_token');
-      window.location.href = '/admin/login';
-      throw err;
-    }
+    })().finally(() => {
+      refreshPromise = null;
+    });
+  }
+  return refreshPromise;
+};
+
+const endSession = () => {
+  sessionStorage.removeItem('admin_token');
+  // Leaves a note for the sign-in page, so people are told why they were signed out
+  // instead of simply landing back on the login screen.
+  try { sessionStorage.setItem('admin_signed_out_reason', 'expired'); } catch {}
+  // This module runs outside React, so there's no router here; a full navigation also drops in-memory admin state.
+  // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+  window.location.href = '/admin/login';
+};
+
+/**
+ * Sends a request; on a 401 it refreshes the access token and retries once. `send` must build its
+ * headers on each call so the retry carries the new token.
+ */
+const sendWithAuth = async (send: () => Promise<Response>): Promise<Response> => {
+  const res = await send();
+  if (res.status !== 401 || typeof window === 'undefined') {
+    return res;
   }
 
-  return new Promise((resolve) => {
-    subscribeTokenRefresh(() => {
-      resolve(originalRequest());
-    });
-  });
+  try {
+    await refreshAccessToken();
+  } catch {
+    endSession();
+    throw new Error(SESSION_EXPIRED);
+  }
+
+  const retried = await send();
+  if (retried.status === 401) {
+    endSession();
+    throw new Error(SESSION_EXPIRED);
+  }
+  return retried;
 };
+
+// Prefer the API's own explanation (e.g. "Image is too large…") over a generic message.
+const readError = async (res: Response, fallback: string) => {
+  try {
+    const body = await res.json();
+    if (body?.error) return String(body.error);
+  } catch {}
+  return fallback;
+};
+
+const jsonHeaders = () => ({
+  'Content-Type': 'application/json',
+  ...getAuthHeaders(),
+});
 
 export const apiService = {
   async get(endpoint: string): Promise<any> {
-    const execute = async () => {
-      const res = await fetch(`${API_BASE_URL}${endpoint}`, {
-        headers: { ...getAuthHeaders() },
-        credentials: 'include',
-        cache: 'default',
-      });
-      if (res.status === 401) {
-        return handleUnauthorized(() => this.get(endpoint));
-      }
-      if (!res.ok) throw new Error(`Failed to fetch ${endpoint}: ${res.status}`);
-      return res.json();
-    };
-    return execute();
+    const res = await sendWithAuth(() => fetch(`${API_BASE_URL}${endpoint}`, {
+      headers: { ...getAuthHeaders() },
+      credentials: 'include',
+      cache: 'default',
+    }));
+    if (!res.ok) throw new Error(await readError(res, `Failed to fetch ${endpoint}: ${res.status}`));
+    return res.json();
   },
 
   async post(endpoint: string, data: any): Promise<any> {
-    const execute = async () => {
-      const res = await fetch(`${API_BASE_URL}${endpoint}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders(),
-        },
-        credentials: 'include',
-        body: JSON.stringify(data),
-      });
-      if (res.status === 401) {
-        return handleUnauthorized(() => this.post(endpoint, data));
-      }
-      if (!res.ok) {
-        let errMsg = `Failed to post to ${endpoint}: ${res.status}`;
-        try {
-          const errBody = await res.json();
-          if (errBody.error) errMsg = errBody.error;
-        } catch {}
-        throw new Error(errMsg);
-      }
-      return res.json();
-    };
-    return execute();
+    const res = await sendWithAuth(() => fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'POST',
+      headers: jsonHeaders(),
+      credentials: 'include',
+      body: JSON.stringify(data),
+    }));
+    if (!res.ok) throw new Error(await readError(res, `Failed to post to ${endpoint}: ${res.status}`));
+    return res.json();
   },
 
   async put(endpoint: string, data: any): Promise<any> {
-    const execute = async () => {
-      const res = await fetch(`${API_BASE_URL}${endpoint}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders(),
-        },
-        credentials: 'include',
-        body: JSON.stringify(data),
-      });
-      if (res.status === 401) {
-        return handleUnauthorized(() => this.put(endpoint, data));
-      }
-      if (!res.ok) {
-        let errMsg = `Failed to update ${endpoint}: ${res.status}`;
-        try {
-          const errBody = await res.json();
-          if (errBody.error) errMsg = errBody.error;
-        } catch {}
-        throw new Error(errMsg);
-      }
-      return res.json();
-    };
-    return execute();
+    const res = await sendWithAuth(() => fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'PUT',
+      headers: jsonHeaders(),
+      credentials: 'include',
+      body: JSON.stringify(data),
+    }));
+    if (!res.ok) throw new Error(await readError(res, `Failed to update ${endpoint}: ${res.status}`));
+    return res.json();
   },
 
   async delete(endpoint: string): Promise<any> {
-    const execute = async () => {
-      const res = await fetch(`${API_BASE_URL}${endpoint}`, {
-        method: 'DELETE',
-        headers: { ...getAuthHeaders() },
-        credentials: 'include',
-      });
-      if (res.status === 401) {
-        return handleUnauthorized(() => this.delete(endpoint));
-      }
-      if (!res.ok) {
-        let errMsg = `Failed to delete ${endpoint}: ${res.status}`;
-        try {
-          const errBody = await res.json();
-          if (errBody.error) errMsg = errBody.error;
-        } catch {}
-        throw new Error(errMsg);
-      }
-      const text = await res.text();
-      return text ? JSON.parse(text) : { success: true };
-    };
-    return execute();
+    const res = await sendWithAuth(() => fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'DELETE',
+      headers: { ...getAuthHeaders() },
+      credentials: 'include',
+    }));
+    if (!res.ok) throw new Error(await readError(res, `Failed to delete ${endpoint}: ${res.status}`));
+    const text = await res.text();
+    return text ? JSON.parse(text) : { success: true };
   },
 
   async uploadFile(file: File): Promise<any> {
-    const execute = async () => {
+    const res = await sendWithAuth(() => {
       const formData = new FormData();
       formData.append('image', file);
-
-      const res = await fetch(`${API_BASE_URL}/upload`, {
+      return fetch(`${API_BASE_URL}/upload`, {
         method: 'POST',
         headers: { ...getAuthHeaders() },
         credentials: 'include',
         body: formData,
       });
-
-      if (res.status === 401) {
-        return handleUnauthorized(() => this.uploadFile(file));
-      }
-      if (!res.ok) throw new Error('File upload failed');
-      return res.json();
-    };
-    return execute();
+    });
+    if (!res.ok) throw new Error(await readError(res, 'File upload failed'));
+    return res.json();
   },
 
   async getGlobalSeo() {
     return this.get('/seo/global');
   },
-  
+
   async updateGlobalSeo(data: any) {
     return this.put('/seo/global', data);
   },
-  
+
   async getPageSeo(slug: string) {
     return this.get(`/seo/pages/${slug}`);
   },
-  
+
   async updatePageSeo(slug: string, data: any) {
     return this.put(`/seo/pages/${slug}`, data);
   },
@@ -190,4 +157,3 @@ export const apiService = {
     return this.put('/auth/change-password', data);
   },
 };
-

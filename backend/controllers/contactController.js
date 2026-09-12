@@ -9,6 +9,17 @@ const normalize = (value) => {
   return trimmed.length > 0 ? trimmed : null;
 };
 
+// Strict on purpose: the admin inbox builds a mailto: link from this value.
+const EMAIL_PATTERN = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+
+const FIELD_LIMITS = {
+  name: 150,
+  email: 150,
+  phone: 50,
+  subject: 255,
+  message: 5000,
+};
+
 const buildSearchClause = (search) => {
   if (!search) {
     return { clause: '', values: [] };
@@ -31,6 +42,17 @@ exports.createMessage = async (req, res) => {
 
     if (!name || !email || !message) {
       return res.status(400).json({ error: 'Name, email, and message are required' });
+    }
+
+    if (!EMAIL_PATTERN.test(email)) {
+      return res.status(400).json({ error: 'Please provide a valid email address' });
+    }
+
+    const fields = { name, email, phone, subject, message };
+    for (const [field, limit] of Object.entries(FIELD_LIMITS)) {
+      if (fields[field] && fields[field].length > limit) {
+        return res.status(400).json({ error: `${field.charAt(0).toUpperCase()}${field.slice(1)} must be ${limit} characters or less` });
+      }
     }
 
     await db.query(

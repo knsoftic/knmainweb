@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { AdminTable } from '../../../components/common/admin-table';
 import { AdminButton, AdminInput, AdminTextarea, AdminImageUpload } from '../../../components/common/admin-form-elements';
 import { apiService } from '../../../services/api';
+import { useLoadOnMount } from '../../../utils/use-load-on-mount';
 import { resolveImageUrl } from '../../../utils/image-url';
+import { confirmAction, notify } from '../../../components/common/admin-feedback';
 
 export default function TeamTestimonialsManager() {
   const [activeTab, setActiveTab] = useState<'team' | 'testimonials'>('team');
@@ -14,23 +16,30 @@ export default function TeamTestimonialsManager() {
 
   const [isEditing, setIsEditing] = useState(false);
   const [currentItem, setCurrentItem] = useState<any>(null);
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  const loadData = async () => {
+    const teamData = await apiService.get('/team');
+    const testData = await apiService.get('/testimonials');
+    return { team: (teamData || []) as any[], testimonials: (testData || []) as any[] };
+  };
+
+  const applyData = (data: { team: any[]; testimonials: any[] }) => {
+    setTeamMembers(data.team);
+    setTestimonials(data.testimonials);
+  };
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const teamData = await apiService.get('/team');
-      setTeamMembers(teamData || []);
-      const testData = await apiService.get('/testimonials');
-      setTestimonials(testData || []);
+      applyData(await loadData());
     } catch (e) {
       console.error(e);
     }
     setLoading(false);
   };
+
+  useLoadOnMount(loadData, applyData, { onSettled: () => setLoading(false) });
 
   const handleEdit = (item: any) => {
     setCurrentItem({ ...item, id_exists: true });
@@ -38,20 +47,22 @@ export default function TeamTestimonialsManager() {
   };
 
   const handleDelete = async (item: any) => {
-    if (confirm(`Are you sure you want to delete ${item.name}?`)) {
+    if (await confirmAction(`Are you sure you want to delete ${item.name}?`)) {
       try {
         const endpoint = activeTab === 'team' ? `/team/${item.id}` : `/testimonials/${item.id}`;
         await apiService.delete(endpoint);
         if (activeTab === 'team') setTeamMembers(teamMembers.filter(t => t.id !== item.id));
         else setTestimonials(testimonials.filter(t => t.id !== item.id));
       } catch (e) {
-        alert('Failed to delete');
+        notify('Failed to delete');
       }
     }
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
+    setSaving(true);
     try {
       const payload = {
         ...currentItem,
@@ -70,7 +81,9 @@ export default function TeamTestimonialsManager() {
       setIsEditing(false);
       setCurrentItem(null);
     } catch (e) {
-      alert('Failed to save');
+      notify('Failed to save');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -127,7 +140,7 @@ export default function TeamTestimonialsManager() {
         )}
         
         <div style={{ display: 'flex', gap: '15px', marginTop: '20px' }}>
-          <AdminButton type="submit">Save</AdminButton>
+          <AdminButton type="submit" loading={saving}>{saving ? 'Saving...' : 'Save'}</AdminButton>
           <AdminButton type="button" variant="secondary" onClick={() => setIsEditing(false)}>Cancel</AdminButton>
         </div>
       </form>
@@ -167,7 +180,7 @@ export default function TeamTestimonialsManager() {
       ) : activeTab === 'team' ? (
         <AdminTable 
           columns={[
-            { key: 'image_url', label: 'Photo', render: (val: string) => <img src={resolveImageUrl(val, '/assets/images/team-default.jpg')} alt="Team" style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '50%' }} /> },
+            { key: 'image_url', label: 'Photo', render: (val: string) => <img src={resolveImageUrl(val, '/assets/images/cover-object.png')} alt="Team" style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '50%' }} /> },
             { key: 'name', label: 'Name' },
             { key: 'category', label: 'Role' }
           ]} 

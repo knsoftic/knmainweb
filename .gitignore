@@ -16,6 +16,7 @@ yarn-error.log*
 .next/
 out/
 build/
+*.tsbuildinfo
 
 # database
 *.sql
@@ -23,7 +24,9 @@ build/
 !database/final_database.sql
 !database/final_migration.sql
 
-# uploads
+# uploads (served from public/uploads; backend/public/uploads is the old location)
+public/uploads/*
+!public/uploads/.gitkeep
 backend/public/uploads/*
 !backend/public/uploads/.gitkeep
 

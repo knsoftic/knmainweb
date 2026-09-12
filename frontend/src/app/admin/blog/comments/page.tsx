@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { AdminTable } from '../../../../components/common/admin-table';
 import { apiService } from '../../../../services/api';
+import { useLoadOnMount } from '../../../../utils/use-load-on-mount';
+import { confirmAction, notify } from '../../../../components/common/admin-feedback';
 
 export default function BlogCommentsManager() {
   const [comments, setComments] = useState<any[]>([]);
@@ -15,58 +17,63 @@ export default function BlogCommentsManager() {
   const [replyMessage, setReplyMessage] = useState('');
   const [submittingReply, setSubmittingReply] = useState(false);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  const loadData = async () => {
+    const [commentsData, postsData] = await Promise.all([
+      apiService.get('/blog/comments'),
+      apiService.get('/blog/posts'),
+    ]);
+    return { commentRows: (commentsData || []) as any[], postRows: (postsData || []) as any[] };
+  };
+
+  const applyData = ({ commentRows, postRows }: { commentRows: any[]; postRows: any[] }) => {
+    setComments(commentRows);
+    // Build a id -> title map
+    const postMap: Record<number, string> = {};
+    postRows.forEach((p: any) => { postMap[p.id] = p.title; });
+    setPosts(postMap);
+  };
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [commentsData, postsData] = await Promise.all([
-        apiService.get('/blog/comments'),
-        apiService.get('/blog/posts'),
-      ]);
-      setComments(commentsData || []);
-      // Build a id -> title map
-      const postMap: Record<number, string> = {};
-      (postsData || []).forEach((p: any) => { postMap[p.id] = p.title; });
-      setPosts(postMap);
+      applyData(await loadData());
     } catch (e) {
       console.error(e);
     }
     setLoading(false);
   };
 
+  useLoadOnMount(loadData, applyData, { onSettled: () => setLoading(false) });
+
   const handleDelete = async (item: any) => {
-    if (confirm(`Delete comment by "${item.name}"?`)) {
+    if (await confirmAction(`Delete comment by "${item.name}"?`)) {
       try {
         await apiService.delete(`/blog/comments/${item.id}`);
         setComments((prev) => prev.filter((c) => c.id !== item.id));
       } catch {
-        alert('Failed to delete comment');
+        notify('Failed to delete comment');
       }
     }
   };
 
   const handleSendReply = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!replyToComment || !replyMessage.trim()) return;
+    if (submittingReply || !replyToComment || !replyMessage.trim()) return;
 
     setSubmittingReply(true);
     try {
-      await apiService.post('/blog/comments/public', {
+      // Authenticated staff reply: the server fills name/email from the logged-in admin and flags it is_staff.
+      await apiService.post('/blog/comments/reply', {
         post_id: replyToComment.post_id,
         parent_id: replyToComment.id,
-        name: 'Admin',
-        email: process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'admin@knsoftic.com',
         comment: replyMessage.trim(),
       });
-      alert('Reply posted successfully!');
+      notify('Reply posted successfully!');
       setReplyToComment(null);
       setReplyMessage('');
       fetchData();
     } catch (e: any) {
-      alert('Failed to post reply: ' + (e?.message || 'Unknown error'));
+      notify('Failed to post reply: ' + (e?.message || 'Unknown error'));
     }
     setSubmittingReply(false);
   };
@@ -91,10 +98,10 @@ export default function BlogCommentsManager() {
     {
       key: 'name',
       label: 'Author',
-      render: (val: string) => (
+      render: (val: string, item: any) => (
         <span style={{ display: 'block', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={val}>
           <strong>{val}</strong>
-          {val === 'Admin' && (
+          {Number(item.is_staff) === 1 && (
             <span style={{ marginLeft: 6, fontSize: '0.72rem', background: '#8D18D0', color: '#fff', padding: '1px 6px', borderRadius: 10, fontWeight: 700 }}>
               STAFF
             </span>

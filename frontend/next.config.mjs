@@ -1,3 +1,13 @@
+const isDev = process.env.NODE_ENV !== 'production';
+
+// In development the API (and its /uploads) runs on the local machine, which next/image blocks by default.
+const devImagePatterns = isDev
+  ? [
+      { protocol: 'http', hostname: '127.0.0.1', port: '5000', pathname: '/uploads/**' },
+      { protocol: 'http', hostname: 'localhost', port: '5000', pathname: '/uploads/**' },
+    ]
+  : [];
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   outputFileTracingRoot: process.cwd(),
@@ -15,7 +25,9 @@ const nextConfig = {
         protocol: 'https',
         hostname: '**.knsoftic.com',
       },
+      ...devImagePatterns,
     ],
+    ...(isDev ? { dangerouslyAllowLocalIP: true } : {}),
   },
   async redirects() {
     return [

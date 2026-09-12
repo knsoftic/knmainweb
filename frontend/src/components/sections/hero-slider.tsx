@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import Image from 'next/image';
+import { useRef, useState } from 'react';
 import { resolveImageUrl } from '../../utils/image-url';
+import { SplitWords } from '../common/split-words';
+import { CountUp, type FunFactItem } from './fun-facts';
 
 export interface HeroSlide {
   id: string | number;
@@ -16,222 +17,228 @@ export interface HeroSlide {
   btn_secondary_url: string;
 }
 
-export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
+const DEFAULT_SLIDE: HeroSlide = {
+  id: 'default',
+  badge_text: 'SOFTWARE HOUSE & IT INSTITUTE',
+  title: 'Build Your Future With Technology',
+  description: 'At KN Softic, we turn ideas into powerful digital products. From websites and mobile apps to enterprise software, we build solutions that drive business success.',
+  image_url: '/assets/images/cover-object.png',
+  btn_primary_text: 'Explore Services',
+  btn_primary_url: '/services',
+  btn_secondary_text: 'View Courses',
+  btn_secondary_url: '/courses',
+};
+
+const AUTOPLAY_MS = 7000;
+
+// Decorative "code" lines: width, indent and start delay of each.
+const CODE_LINES = [
+  { w: '72%', d: '0s' },
+  { w: '54%', indent: '14px', d: '0.25s', variant: 'accent' },
+  { w: '66%', indent: '14px', d: '0.5s' },
+  { w: '40%', indent: '28px', d: '0.75s', variant: 'ok' },
+  { w: '58%', d: '1s' },
+];
+
+type HeroSliderProps = {
+  slides: HeroSlide[];
+  /** Admin → Homepage → Fun Facts, shown under the slides (first four). */
+  stats?: FunFactItem[];
+  /** Service / course names scrolling along the bottom of the hero. */
+  marquee?: string[];
+};
+
+export function HeroSlider({ slides, stats = [], marquee = [] }: HeroSliderProps) {
+  const activeSlides = slides && slides.length > 0 ? slides : [DEFAULT_SLIDE];
+  const count = activeSlides.length;
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
+  const pointerFrame = useRef(0);
 
-  const activeSlides = slides && slides.length > 0 ? slides : [{
-    id: 'default',
-    badge_text: 'SOFTWARE HOUSE & IT INSTITUTE',
-    title: 'Build Your Future With Technology',
-    description: 'At KN Softic, we turn ideas into powerful digital products. From websites and mobile apps to enterprise software, we build solutions that drive business success.',
-    image_url: '/assets/images/cover-object.png',
-    btn_primary_text: 'Explore Services',
-    btn_primary_url: '/services',
-    btn_secondary_text: 'View Courses',
-    btn_secondary_url: '/courses'
-  }];
+  const goTo = (index: number) => setCurrentIndex(((index % count) + count) % count);
+  const heroStats = stats.slice(0, 4);
+  const showBar = heroStats.length > 0 || count > 1;
+  const showMarquee = marquee.length >= 3;
 
-  const handleNext = useCallback(() => {
-    if (isTransitioning || activeSlides.length <= 1) return;
-    setIsTransitioning(true);
-    setCurrentIndex((prev) => (prev === activeSlides.length - 1 ? 0 : prev + 1));
-    setTimeout(() => setIsTransitioning(false), 500); // 500ms transition match
-  }, [isTransitioning, activeSlides.length]);
+  // Mouse position → CSS variables for the spotlight and the tilt/parallax of the picture.
+  // Written straight to the element (once per frame), so moving the mouse never re-renders React.
+  const onPointerMove = (event: React.PointerEvent<HTMLElement>) => {
+    if (event.pointerType !== 'mouse') return;
+    const section = event.currentTarget;
+    const { clientX, clientY } = event;
+    cancelAnimationFrame(pointerFrame.current);
+    pointerFrame.current = requestAnimationFrame(() => {
+      const rect = section.getBoundingClientRect();
+      const x = clientX - rect.left;
+      const y = clientY - rect.top;
+      section.style.setProperty('--mx', `${x}px`);
+      section.style.setProperty('--my', `${y}px`);
+      section.style.setProperty('--px', (x / rect.width - 0.5).toFixed(3));
+      section.style.setProperty('--py', (y / rect.height - 0.5).toFixed(3));
+    });
+  };
 
-  const handlePrev = useCallback(() => {
-    if (isTransitioning || activeSlides.length <= 1) return;
-    setIsTransitioning(true);
-    setCurrentIndex((prev) => (prev === 0 ? activeSlides.length - 1 : prev - 1));
-    setTimeout(() => setIsTransitioning(false), 500);
-  }, [isTransitioning, activeSlides.length]);
-
-  useEffect(() => {
-    if (activeSlides.length <= 1) return;
-    const timer = setInterval(() => {
-      handleNext();
-    }, 5000); // Auto slide every 5 seconds
-    return () => clearInterval(timer);
-  }, [handleNext, activeSlides.length]);
+  const onPointerLeave = () => {
+    const section = sectionRef.current;
+    if (!section) return;
+    cancelAnimationFrame(pointerFrame.current);
+    section.style.setProperty('--px', '0');
+    section.style.setProperty('--py', '0');
+  };
 
   return (
-    <section className="premium-hero-section d-flex align-items-center position-relative" id="top" style={{ overflow: 'hidden', minHeight: '600px', backgroundColor: '#faf9fc' }}>
-      
-      {/* Dynamic Background Effects */}
-      <style dangerouslySetInnerHTML={{__html: `
-        @keyframes float {
-          0% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-20px) rotate(2deg); }
-          100% { transform: translateY(0px) rotate(0deg); }
-        }
-        @keyframes blob-bounce {
-          0% { transform: translate(0px, 0px) scale(1); }
-          33% { transform: translate(30px, -50px) scale(1.1); }
-          66% { transform: translate(-20px, 20px) scale(0.9); }
-          100% { transform: translate(0px, 0px) scale(1); }
-        }
-        @keyframes moveGrid {
-          0% { background-position: 0 0; }
-          100% { background-position: 40px 40px; }
-        }
-        @keyframes driftUp {
-          0% { transform: translateY(100vh) scale(0); opacity: 0; }
-          20% { opacity: 0.8; }
-          80% { opacity: 0.5; }
-          100% { transform: translateY(-20vh) scale(1.5); opacity: 0; }
-        }
-        .hero-grid-bg {
-          position: absolute;
-          top: -50%; left: -50%; right: -50%; bottom: -50%;
-          background-image: 
-            linear-gradient(to right, rgba(141, 24, 208, 0.04) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(141, 24, 208, 0.04) 1px, transparent 1px);
-          background-size: 40px 40px;
-          animation: moveGrid 3s linear infinite;
-          z-index: 0;
-          transform: perspective(500px) rotateX(60deg) translateY(-100px) translateZ(-200px);
-          mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%);
-          -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%);
-        }
-        .hero-glow-blob {
-          position: absolute;
-          border-radius: 50%;
-          filter: blur(80px);
-          opacity: 0.6;
-          z-index: 0;
-          animation: blob-bounce 15s infinite ease-in-out;
-        }
-        .blob-1 { top: -10%; left: -10%; width: 400px; height: 400px; background: rgba(141, 24, 208, 0.3); }
-        .blob-2 { bottom: -10%; right: -5%; width: 500px; height: 500px; background: rgba(184, 74, 245, 0.25); animation-delay: 2s; }
-        .blob-3 { top: 40%; left: 50%; width: 300px; height: 300px; background: rgba(116, 235, 213, 0.2); animation-delay: 4s; }
-        .floating-image {
-          animation: float 6s ease-in-out infinite;
-          filter: drop-shadow(0 20px 30px rgba(141,24,208,0.2));
-        }
-        .glowing-particle {
-          position: absolute;
-          width: 6px;
-          height: 6px;
-          background: #fff;
-          border-radius: 50%;
-          box-shadow: 0 0 10px 2px rgba(141, 24, 208, 0.8), 0 0 20px 4px rgba(184, 74, 245, 0.4);
-          z-index: 1;
-          animation: driftUp linear infinite;
-        }
-        .text-gradient-premium {
-          background: linear-gradient(135deg, #2c3e50 0%, #8D18D0 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-        .hero-shading-overlay {
-          position: absolute;
-          top: 0; left: 0; right: 0; bottom: 0;
-          background: radial-gradient(circle at center, transparent 30%, rgba(20, 10, 40, 0.05) 100%);
-          box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.03);
-          z-index: 1;
-          pointer-events: none;
-        }
-        .hero-title-shadow {
-          text-shadow: 0 4px 15px rgba(141, 24, 208, 0.15);
-        }
-      `}} />
+    <section
+      ref={sectionRef}
+      className={`ks-hero${showMarquee ? '' : ' ks-hero--plain'}`}
+      id="top"
+      style={{ '--autoplay': `${AUTOPLAY_MS}ms` } as React.CSSProperties}
+      aria-roledescription={count > 1 ? 'carousel' : undefined}
+      onPointerMove={onPointerMove}
+      onPointerLeave={onPointerLeave}
+    >
+      <div className="ks-hero__bg" aria-hidden="true">
+        <span className="ks-blob ks-blob--1"></span>
+        <span className="ks-blob ks-blob--2"></span>
+        <span className="ks-blob ks-blob--3"></span>
+        <span className="ks-hero__grid"></span>
+        <span className="ks-hero__spot"></span>
+        <span className="ks-grain"></span>
+      </div>
 
-      <div className="hero-grid-bg"></div>
-      <div className="hero-shading-overlay"></div>
-      <div className="hero-glow-blob blob-1"></div>
-      <div className="hero-glow-blob blob-2"></div>
-      <div className="hero-glow-blob blob-3"></div>
-
-      {/* Drifting Particles - Statically seeded for SSR Hydration */}
-      {[
-        { left: '15%', duration: '8.5s', delay: '1.2s' },
-        { left: '85%', duration: '6.2s', delay: '0.4s' },
-        { left: '35%', duration: '11.1s', delay: '2.5s' },
-        { left: '55%', duration: '7.8s', delay: '3.1s' },
-        { left: '25%', duration: '9.4s', delay: '0.8s' },
-        { left: '75%', duration: '12.3s', delay: '4.2s' },
-        { left: '45%', duration: '6.9s', delay: '1.9s' },
-        { left: '95%', duration: '10.5s', delay: '0.2s' },
-        { left: '5%', duration: '8.8s', delay: '3.7s' },
-        { left: '65%', duration: '7.2s', delay: '2.1s' },
-        { left: '10%', duration: '11.8s', delay: '4.8s' },
-        { left: '90%', duration: '9.1s', delay: '1.5s' }
-      ].map((particle, i) => (
-        <div key={i} className="glowing-particle" style={{
-          left: particle.left,
-          animationDuration: particle.duration,
-          animationDelay: particle.delay,
-          opacity: 0
-        }}></div>
-      ))}
-
-      <div className="container position-relative z-index-2" style={{ zIndex: 2 }}>
-        <div className="tab-content" id="heroTabContent" style={{ position: 'relative', minHeight: '500px' }}>
-          
+      <div className="ks-container">
+        <div className="ks-hero__slides">
           {activeSlides.map((slide, index) => {
             const isActive = index === currentIndex;
-            const imgSrc = resolveImageUrl(slide.image_url, '/assets/images/cover-object.png');
-            
             return (
               <div
                 key={slide.id}
-                className={`tab-pane fade ${isActive ? 'show active' : ''}`}
-                style={{
-                  position: isActive ? 'relative' : 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  opacity: isActive ? 1 : 0,
-                  transition: 'opacity 0.5s ease-in-out',
-                  zIndex: isActive ? 2 : 1,
-                  pointerEvents: isActive ? 'auto' : 'none'
-                }}
+                className={`ks-hero__slide${isActive ? '' : ' is-hidden'}`}
+                aria-hidden={!isActive}
+                role={count > 1 ? 'group' : undefined}
+                aria-roledescription={count > 1 ? 'slide' : undefined}
+                aria-label={count > 1 ? `${index + 1} of ${count}` : undefined}
               >
-                <div className="row align-items-center gy-5">
-                  <div className="col-lg-6 text-center text-lg-start">
-                    {slide.badge_text && (
-                      <div className="hero-badge mb-4" style={{ transform: isActive ? 'translateY(0)' : 'translateY(20px)', opacity: isActive ? 1 : 0, transition: 'all 0.6s ease 0.1s' }}>
-                        <span className="badge-dot"></span> {slide.badge_text}
-                      </div>
+                <div className="ks-hero__copy">
+                  {slide.badge_text && (
+                    <span className="ks-badge">
+                      <span className="ks-badge__dot" aria-hidden="true"></span> {slide.badge_text}
+                    </span>
+                  )}
+                  <h2 className="ks-display ks-hero__title"><SplitWords text={slide.title} /></h2>
+                  {slide.description && <p className="ks-hero__desc">{slide.description}</p>}
+                  <div className="ks-hero__actions">
+                    {slide.btn_primary_text && (
+                      <a href={slide.btn_primary_url || '#'} className="ks-btn ks-btn--light">
+                        {slide.btn_primary_text} <i className="fa fa-arrow-right" aria-hidden="true"></i>
+                      </a>
                     )}
-                    <h2 className="hero-title mb-3 hero-title-shadow" style={{ transform: isActive ? 'translateY(0)' : 'translateY(20px)', opacity: isActive ? 1 : 0, transition: 'all 0.6s ease 0.2s', fontSize: 'clamp(2.5rem, 5vw, 4.5rem)', margin: 0, fontWeight: 800 }}>
-                      {slide.title}
-                    </h2>
-                    <p className="hero-description mb-5" style={{ transform: isActive ? 'translateY(0)' : 'translateY(20px)', opacity: isActive ? 1 : 0, transition: 'all 0.6s ease 0.3s' }}>
-                      {slide.description}
-                    </p>
-                    <div className="hero-actions d-flex flex-wrap gap-3 justify-content-center justify-content-lg-start" style={{ transform: isActive ? 'translateY(0)' : 'translateY(20px)', opacity: isActive ? 1 : 0, transition: 'all 0.6s ease 0.4s' }}>
-                      {slide.btn_primary_text && (
-                        <a href={slide.btn_primary_url || '#'} className="btn btn-premium-primary">
-                          {slide.btn_primary_text}
-                        </a>
-                      )}
-                      {slide.btn_secondary_text && (
-                        <a href={slide.btn_secondary_url || '#'} className="btn btn-premium-outline">
-                          {slide.btn_secondary_text}
-                        </a>
-                      )}
-                    </div>
+                    {slide.btn_secondary_text && (
+                      <a href={slide.btn_secondary_url || '#'} className="ks-btn ks-btn--ghost">
+                        {slide.btn_secondary_text}
+                      </a>
+                    )}
                   </div>
-                  <div className="col-lg-6 d-flex justify-content-center position-relative">
-                    <div className="hero-graphic-container" style={{ transform: isActive ? 'scale(1)' : 'scale(0.95)', opacity: isActive ? 1 : 0, transition: 'all 0.8s ease' }}>
-                      <img 
-                        src={imgSrc} 
-                        alt={slide.title} 
-                        className="img-fluid hero-3d-graphic floating-image" 
-                        style={{ objectFit: 'contain', maxHeight: '500px' }} 
-                      />
-                      <div className="graphic-shadow"></div>
+                </div>
+
+                <div className="ks-hero__visual">
+                  <div className="ks-hero__stage">
+                    <span className="ks-hero__ring ks-hero__ring--1" aria-hidden="true"><i></i></span>
+                    <span className="ks-hero__ring ks-hero__ring--2" aria-hidden="true"><i></i><i></i></span>
+                    <span className="ks-hero__ring ks-hero__ring--3" aria-hidden="true"></span>
+                    <span className="ks-hero__halo" aria-hidden="true"></span>
+                    <img
+                      src={resolveImageUrl(slide.image_url, '/assets/images/cover-object.png')}
+                      alt={slide.title}
+                      className="ks-hero__image"
+                      fetchPriority={index === 0 ? 'high' : undefined}
+                    />
+                    <div className="ks-hero__float ks-hero__float--a" aria-hidden="true">
+                      <span className="ks-icon-tile ks-icon-tile--sm ks-icon-tile--grad"><i className="fa fa-code"></i></span>
+                      <span>Software House<small>Web · Mobile · Custom</small></span>
+                    </div>
+                    <div className="ks-hero__float ks-hero__float--b" aria-hidden="true">
+                      <span className="ks-icon-tile ks-icon-tile--sm ks-icon-tile--grad"><i className="fa fa-graduation-cap"></i></span>
+                      <span>IT Institute<small>Hands-on courses</small></span>
+                    </div>
+                    <div className="ks-hero__code" aria-hidden="true">
+                      <span className="ks-hero__code-dots"><i></i><i></i><i></i></span>
+                      {CODE_LINES.map((line, lineIndex) => (
+                        <span
+                          key={lineIndex}
+                          className={`ks-hero__code-line${line.variant ? ` ks-hero__code-line--${line.variant}` : ''}`}
+                          style={{ '--w': line.w, '--indent': line.indent, '--d': line.d } as React.CSSProperties}
+                        ></span>
+                      ))}
                     </div>
                   </div>
                 </div>
               </div>
             );
           })}
-
         </div>
+
+        {showBar && (
+          <div className="ks-hero__bar">
+            {heroStats.length > 0 ? (
+              <dl className="ks-hero__stats">
+                {heroStats.map((stat) => (
+                  <div className="ks-hero__stat" key={stat.id}>
+                    <dt className="ks-hero__stat-label">{stat.label}</dt>
+                    <dd className="ks-hero__stat-num"><CountUp target={Number(stat.target) || 0} /></dd>
+                  </div>
+                ))}
+              </dl>
+            ) : <span />}
+
+            {count > 1 && (
+              <div className="ks-hero__controls">
+                <button type="button" className="ks-hero__arrow" onClick={() => goTo(currentIndex - 1)} aria-label="Previous slide">
+                  <i className="fa fa-arrow-left" aria-hidden="true"></i>
+                </button>
+                <div className="ks-hero__dots">
+                  {activeSlides.map((slide, index) => (
+                    <button
+                      key={slide.id}
+                      type="button"
+                      className={`ks-hero__dot${index === currentIndex ? ' is-active' : ''}`}
+                      onClick={() => goTo(index)}
+                      aria-label={`Show slide ${index + 1}`}
+                      aria-current={index === currentIndex ? 'true' : undefined}
+                    >
+                      {/* Autoplay: when this bar finishes filling, the next slide shows. Being a CSS animation,
+                          it pauses with the page (background tab, hover, reduced motion turns it off). */}
+                      {index === currentIndex && (
+                        <span
+                          className="ks-hero__dot-fill"
+                          onAnimationEnd={(event) => {
+                            if (event.target === event.currentTarget) goTo(currentIndex + 1);
+                          }}
+                        ></span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+                <button type="button" className="ks-hero__arrow" onClick={() => goTo(currentIndex + 1)} aria-label="Next slide">
+                  <i className="fa fa-arrow-right" aria-hidden="true"></i>
+                </button>
+                <span className="ks-hero__count" aria-hidden="true">
+                  {String(currentIndex + 1).padStart(2, '0')} / {String(count).padStart(2, '0')}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
+
+      {showMarquee && (
+        <div className="ks-marquee" aria-hidden="true">
+          <div className="ks-marquee__track">
+            {[...marquee, ...marquee].map((item, index) => (
+              <span className="ks-marquee__item" key={`${item}-${index}`}>{item}</span>
+            ))}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

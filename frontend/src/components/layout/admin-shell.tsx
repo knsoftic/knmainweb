@@ -1,39 +1,54 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AdminSidebar } from './admin-sidebar';
+import { AdminFeedback } from '../common/admin-feedback';
+import { API_BASE } from '../../utils/api-url';
+
+const subscribeToResize = (onChange: () => void) => {
+  window.addEventListener('resize', onChange);
+  return () => window.removeEventListener('resize', onChange);
+};
+
+const subscribeToStorage = (onChange: () => void) => {
+  window.addEventListener('storage', onChange);
+  return () => window.removeEventListener('storage', onChange);
+};
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
-  const [isMobile, setIsMobile] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const router = useRouter();
+  const isMobile = useSyncExternalStore(subscribeToResize, () => window.innerWidth < 992, () => false);
+  // undefined while rendering on the server (unknown); null once the browser confirms there's no session.
+  const token = useSyncExternalStore<string | null | undefined>(
+    subscribeToStorage,
+    () => sessionStorage.getItem('admin_token'),
+    () => undefined
+  );
 
   useEffect(() => {
-    const token = sessionStorage.getItem('admin_token');
-    if (!token) {
+    if (token === null) {
       router.replace('/admin/login');
-    } else {
-      setIsCheckingAuth(false);
     }
-    
-    const handleResize = () => setIsMobile(window.innerWidth < 992);
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [router]);
+  }, [token, router]);
 
-  const handleLogout = () => {
-    sessionStorage.removeItem('admin_token');
+  const handleLogout = async () => {
+    try {
+      // Revoke the refresh cookie on the server; ignore failures so logout always completes locally.
+      await fetch(`${API_BASE}/auth/logout`, { method: 'POST', credentials: 'include' });
+    } catch {}
+    sessionStorage.clear();
     router.replace('/admin/login');
   };
 
-  if (isCheckingAuth) return null;
+  if (!token) return null;
 
   return (
     <div className="admin-layout" style={{ display: 'flex', minHeight: '100vh', background: '#f4f6f9', color: '#333' }}>
+      {/* Toasts and confirm dialogs for every admin page. */}
+      <AdminFeedback />
       <AdminSidebar isOpen={sidebarOpen} isMobile={isMobile} onClose={() => setSidebarOpen(false)} />
       
       {isMobile && sidebarOpen && (

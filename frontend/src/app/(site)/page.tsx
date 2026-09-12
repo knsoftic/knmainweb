@@ -1,181 +1,198 @@
+import Link from 'next/link';
 import { AboutAccordion } from '../../components/sections/about-accordion';
 import { FilteredGrid } from '../../components/common/filtered-grid';
 import { CourseCard } from '../../components/common/course-card';
-import { FunFactsSection } from '../../components/sections/fun-facts';
 import { PortraitTeamCard } from '../../components/common/portrait-team-card';
+import { SectionHeader } from '../../components/common/section-header';
 import { TestimonialsSection } from '../../components/sections/testimonials-section';
 import { HeroSlider } from '../../components/sections/hero-slider';
+import { ServiceExplorer } from '../../components/sections/service-explorer';
+import { PageSchema } from '../../components/seo/json-ld';
 import { safeFetch } from '../../utils/safe-fetch';
 import { resolveImageUrl } from '../../utils/image-url';
 import { apiUrl } from '../../utils/api-url';
-import Image from 'next/image';
 import { generatePageMetadata } from '../../utils/seo';
+import { revealDelay } from '../../utils/reveal';
 
 export async function generateMetadata() {
   return generatePageMetadata('home');
 }
 
-export default async function HomePage() {
-  const servicesData = await safeFetch(apiUrl('/homepage_services?_source=home'), []);
-  const coursesData = await safeFetch(apiUrl('/homepage_courses?_source=home'), []);
-  const teamMembersData = await safeFetch(apiUrl('/team?_source=home'), []);
-  const heroData = await safeFetch(apiUrl('/hero_slides?_source=home'), []);
-  const settingsData = await safeFetch(apiUrl('/settings?_source=home'), null);
-  const factsData = await safeFetch(apiUrl('/fun_facts?_source=home'), []);
-  const cardsData = await safeFetch(apiUrl('/homepage_cards?_source=home'), []);
-  const pageSeo = await safeFetch(apiUrl('/seo/pages/home?_source=home'), null);
-  
-  const hero = Array.isArray(heroData) && heroData.length > 0 ? heroData[0] : {};
-  const funFacts = Array.isArray(factsData) && factsData.length > 0 ? factsData : undefined;
-  const homepageCards = Array.isArray(cardsData) ? cardsData.filter((c: any) => c.is_active).slice(0, 3) : [];
+const asList = (value: any): any[] => (Array.isArray(value) ? value : []);
 
-  const services = (Array.isArray(servicesData) ? servicesData : []).filter((s: any) => s.is_active);
-  const courses = (Array.isArray(coursesData) ? coursesData : []).filter((c: any) => c.is_active);
-  const teamMembers = (Array.isArray(teamMembersData) ? teamMembersData : []).filter((t: any) => t.is_active);
+/** Sorts rows by a numeric order column (display_order by default). The sort is stable, so ties keep the API order. */
+const sortByOrder = (rows: any[], key = 'display_order') =>
+  [...rows].sort((a, b) => (Number(a?.[key]) || 0) - (Number(b?.[key]) || 0));
+
+const categorySlug = (value: unknown) => String(value).toLowerCase().replace(/[^a-z0-9]+/g, '_');
+const titleCase = (value: unknown) => String(value).split(' ').map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+
+const WHY_POINTS = ['Agile delivery with milestone reviews', 'Fast, SEO-friendly builds', 'Post-launch support', 'Hands-on, career-focused training'];
+
+export default async function HomePage() {
+  const [servicesData, coursesData, teamMembersData, heroData, settingsData, factsData, cardsData, testimonialsData, pageSeo] = await Promise.all([
+    safeFetch(apiUrl('/homepage_services?_source=home'), []),
+    safeFetch(apiUrl('/homepage_courses?_source=home'), []),
+    safeFetch(apiUrl('/team?_source=home'), []),
+    safeFetch(apiUrl('/hero_slides?_source=home'), []),
+    safeFetch(apiUrl('/settings?_source=home'), null),
+    safeFetch(apiUrl('/fun_facts?_source=home'), []),
+    safeFetch(apiUrl('/homepage_cards?_source=home'), []),
+    safeFetch(apiUrl('/testimonials?_source=home'), []),
+    safeFetch(apiUrl('/seo/pages/home?_source=home'), null),
+  ]);
+
+  const heroSlides = sortByOrder(asList(heroData).filter((s: any) => s.is_active));
+  const funFacts = sortByOrder(asList(factsData));
+  const homepageCards = sortByOrder(asList(cardsData).filter((c: any) => c.is_active)).slice(0, 3);
+
+  // Featured services/courses come with the order chosen in Admin → Homepage.
+  const services = sortByOrder(asList(servicesData).filter((s: any) => s.is_active), 'homepage_order');
+  const courses = sortByOrder(asList(coursesData).filter((c: any) => c.is_active), 'homepage_order');
+  const teamMembers = sortByOrder(asList(teamMembersData).filter((t: any) => t.is_active));
+  const testimonials = asList(testimonialsData).filter((t: any) => t.is_approved);
 
   const courseCards = courses.map((c: any) => ({
     ...c,
-    image: resolveImageUrl(c.image_url, '/assets/images/course-default.jpg'),
+    image: resolveImageUrl(c.image_url, '/assets/images/cover-object.png'),
     enrollUrl: c.enroll_url,
-    filter: c.filter_slug,
-    bullets: [] // Bullets would be fetched from a separate endpoint or joined in backend
   }));
 
   const formattedTeam = teamMembers.map((m: any) => ({
     ...m,
-    image: resolveImageUrl(m.image_url, '/assets/images/team-default.jpg'),
-    role: m.category,
-    facebook: m.facebook_url,
-    twitter: m.twitter_url,
-    linkedin: m.linkedin_url
+    image: resolveImageUrl(m.image_url),
   }));
+
+  const explorerServices = services.map((service: any) => ({
+    id: service.id,
+    title: service.page_title || service.title,
+    description: service.description,
+    icon: service.icon,
+    features: service.features,
+    button_label: service.button_label,
+  }));
+
+  // Names that scroll along the bottom of the hero.
+  const marquee = Array.from(new Set([
+    ...explorerServices.map((service) => service.title),
+    ...courses.map((course: any) => course.title),
+  ].filter(Boolean).map(String)));
+
+  const courseCategories = Array.from(new Set(courseCards.map((c: any) => c.category).filter(Boolean)));
 
   return (
     <>
-      <h1 className="visually-hidden" style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', border: 0 }}>
+      <PageSchema slug="home" />
+      <h1 className="ks-visually-hidden">
         {pageSeo?.h1_heading || 'KN Softic - Software House & IT Institute'}
       </h1>
-      <HeroSlider slides={Array.isArray(heroData) && heroData.length > 0 ? heroData : []} />
+      <HeroSlider slides={heroSlides} stats={funFacts} marquee={marquee} />
 
-      <section className="section services" id="services">
-        <div className="container">
-          <div className="row">
-            <div className="col-lg-12 text-center">
-              <div className="section-heading mb-5">
-                <div style={{ color: '#8D18D0', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.9rem', marginBottom: '10px' }}>OUR SERVICES</div>
-                <h2>{pageSeo?.h2_heading || 'What We Do'}</h2>
-              </div>
+      {homepageCards.length > 0 && (
+        <section className="ks-section ks-section--tight" id="highlights" aria-label="Highlights">
+          <div className="ks-container">
+            <div className="ks-grid">
+              {homepageCards.map((card: any, index: number) => (
+                <article className="ks-card ks-card--hover ks-highlight" key={card.id} data-reveal="" style={revealDelay(index)}>
+                  <div className="ks-card__body">
+                    {/* Gradient tile behind the icon: the default card icons are white. */}
+                    <span className="ks-icon-tile ks-icon-tile--lg ks-icon-tile--grad" aria-hidden="true">
+                      <img src={resolveImageUrl(card.image_url, '/assets/images/service-01.png')} alt="" />
+                    </span>
+                    <h3 className="ks-card__title">{card.title}</h3>
+                    <p className="ks-card__text">{card.description}</p>
+                    {card.read_more_url && card.read_more_url.trim() !== '#' && (
+                      <div className="ks-card__foot">
+                        <a href={card.read_more_url} className="ks-link">Read More <i className="fa fa-arrow-right" aria-hidden="true"></i></a>
+                      </div>
+                    )}
+                  </div>
+                </article>
+              ))}
             </div>
           </div>
-          <div className="row">
-            {services.map((service: any) => (
-              <div className="col-lg-4 col-md-6 mb-4 event_outer" key={service.id}>
-                <div className="service-page-card" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                  <div className="card-icon-top">
-                    <i className={`fa ${service.icon || 'fa-desktop'}`}></i>
-                  </div>
-                  <h4>{service.page_title || service.title}</h4>
-                  <p className="card-desc" style={{ flexGrow: 1 }}>{service.description}</p>
-                  
-                  {service.features && typeof service.features === 'string' && service.features.trim() !== '' && (
-                    <ul className="card-features" style={{ marginBottom: '20px' }}>
-                      {service.features.split('\n').map((feature: string, idx: number) => {
-                        const trimmed = feature.trim();
-                        if (!trimmed) return null;
-                        return (
-                          <li key={idx}><i className="fa fa-check check-icon"></i> {trimmed}</li>
-                        );
-                      })}
-                    </ul>
-                  )}
+        </section>
+      )}
 
-                  <a href="/contact" className="btn-quote" style={{ marginTop: 'auto' }}>{service.button_label || 'Get a Quote →'}</a>
+      {explorerServices.length > 0 && (
+        <section className={`ks-section${homepageCards.length > 0 ? ' ks-section--flush-top' : ''}`} id="services">
+          <div className="ks-container">
+            <SectionHeader
+              eyebrow="Our Services"
+              title={pageSeo?.h2_heading || 'What We Do'}
+              description="From idea to launch: websites, apps, custom software and digital marketing, built by one team that also trains the next generation of developers."
+              action={<Link href="/services" className="ks-link">View All Services <i className="fa fa-arrow-right" aria-hidden="true"></i></Link>}
+            />
+            <ServiceExplorer services={explorerServices} />
+          </div>
+        </section>
+      )}
+
+      {courseCards.length > 0 && (
+        <section className="ks-section ks-section--white" id="courses">
+          <div className="ks-container">
+            <SectionHeader
+              eyebrow="Latest Courses"
+              title={pageSeo?.h3_heading || 'Latest Courses'}
+              description="Practical, project-based IT courses with certificates and career support."
+              action={<Link href="/courses" className="ks-link">Explore All Courses <i className="fa fa-arrow-right" aria-hidden="true"></i></Link>}
+            />
+            <FilteredGrid
+              filters={[
+                { label: 'Show All', value: '*' },
+                ...courseCategories.map((cat: any) => ({ label: titleCase(cat), value: `.${categorySlug(cat)}` })),
+              ]}
+              items={courseCards.map((course: any) => ({
+                id: course.id,
+                filter: course.category ? categorySlug(course.category) : 'uncategorized',
+                content: <CourseCard course={course} />,
+              }))}
+            />
+          </div>
+        </section>
+      )}
+
+      <section className="ks-section" id="about">
+        <div className="ks-container">
+          <div className="ks-dark-panel" data-reveal="zoom">
+            <div className="ks-why">
+              <div data-reveal="stagger">
+                <p className="ks-eyebrow ks-eyebrow--light">{settingsData?.about_subtitle || 'About Us'}</p>
+                <h2 className="ks-title ks-title--light">{pageSeo?.h4_heading || settingsData?.about_title || 'What make us the best?'}</h2>
+                <p className="ks-lead ks-lead--light">
+                  {settingsData?.about_description || "We bring your digital visions to life through a seamless blend of cutting-edge development and striking visual identity. From full-featured e-commerce platforms and intuitive mobile apps to complete brand transformations, we deliver high-performance, tailored solutions that don't just look spectacular—they drive real results for your business."}
+                </p>
+                <ul className="ks-checklist ks-checklist--2 ks-checklist--light" style={{ marginTop: '28px' }}>
+                  {WHY_POINTS.map((point) => <li key={point}>{point}</li>)}
+                </ul>
+                <div style={{ marginTop: '36px' }}>
+                  <Link href="/about" className="ks-btn ks-btn--light">Discover More <i className="fa fa-arrow-right" aria-hidden="true"></i></Link>
                 </div>
               </div>
-            ))}
-          </div>
-          <div className="row mt-5">
-            <div className="col-lg-12 text-center">
-              <div className="main-button">
-                <a href="/services">View All Services <i className="fa fa-arrow-right" style={{ marginLeft: '6px' }}></i></a>
-              </div>
+              <AboutAccordion dark />
             </div>
           </div>
         </div>
       </section>
 
-      <section className="section courses" id="courses">
-        <div className="container">
-          <div className="row"><div className="col-lg-12 text-center"><div className="section-heading"><div style={{ color: '#8D18D0', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.9rem', marginBottom: '10px' }}>LATEST COURSES</div><h2>{pageSeo?.h3_heading || 'Latest Courses'}</h2></div></div></div>
-          <FilteredGrid
-            filters={[
-              { label: 'Show All', value: '*' },
-              ...Array.from(new Set(courseCards.map((c: any) => c.category).filter(Boolean))).map((cat: any) => ({
-                label: String(cat).split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
-                value: `.${String(cat).toLowerCase().replace(/[^a-z0-9]+/g, '_')}`
-              }))
-            ]}
-            items={courseCards.map((course: any) => {
-              const catSlug = course.category ? String(course.category).toLowerCase().replace(/[^a-z0-9]+/g, '_') : 'uncategorized';
-              return {
-                id: course.id,
-                filter: `col-lg-4 col-md-6 align-self-center mb-30 event_outer ${catSlug}`,
-                className: `col-lg-4 col-md-6 align-self-center mb-30 event_outer ${catSlug}`,
-                content: <CourseCard course={course} />
-              };
-            })}
-          />
-          <div className="row mt-5">
-            <div className="col-lg-12 text-center">
-              <div className="main-button">
-                <a href="/courses">Explore All Courses <i className="fa fa-arrow-right" style={{ marginLeft: '6px' }}></i></a>
-              </div>
+      {formattedTeam.length > 0 && (
+        <section className="ks-section ks-section--flush-top" id="team">
+          <div className="ks-container">
+            <SectionHeader
+              eyebrow="Team"
+              title={pageSeo?.h5_heading || 'Meet Our Team'}
+              description="Developers, designers and instructors who plan, build and teach at KN Softic."
+            />
+            <div className="ks-grid ks-grid--4">
+              {formattedTeam.map((member: any, index: number) => (
+                <PortraitTeamCard member={member} index={index} key={member.id} />
+              ))}
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
-      <div className="section about-us">
-        <div className="container">
-          <div className="row">
-            <div className="col-lg-6 offset-lg-1">
-              <AboutAccordion />
-            </div>
-            <div className="col-lg-5 align-self-center">
-              <div className="section-heading">
-                <div style={{ color: '#8D18D0', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.9rem', marginBottom: '10px' }}>{settingsData?.about_subtitle || 'ABOUT US'}</div>
-                <h2>{pageSeo?.h4_heading || settingsData?.about_title || 'What make us the best?'}</h2>
-                <p>{settingsData?.about_description || "We bring your digital visions to life through a seamless blend of cutting-edge development and striking visual identity. From full-featured e-commerce platforms and intuitive mobile apps to complete brand transformations, we deliver high-performance, tailored solutions that don't just look spectacular—they drive real results for your business."}</p>
-                <div className="main-button"><a href="/about">Discover More</a></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <FunFactsSection stats={funFacts} />
-
-      <div className="team section" id="team">
-        <div className="container">
-          <div className="row">
-            <div className="col-lg-12 text-center">
-              <div className="section-heading mb-5">
-                <div style={{ color: '#8D18D0', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.9rem', marginBottom: '10px' }}>TEAM</div>
-                <h2>{pageSeo?.h5_heading || 'Meet Our Team'}</h2>
-              </div>
-            </div>
-          </div>
-          <div className="row">
-            {formattedTeam.map((member: any) => (
-              <div className="col-lg-3 col-md-6 mb-4" key={member.name}>
-                <PortraitTeamCard member={member} />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <TestimonialsSection />
+      <TestimonialsSection testimonials={testimonials} />
     </>
   );
 }

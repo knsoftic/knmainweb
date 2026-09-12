@@ -1,31 +1,36 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { AdminTable } from '../../../components/common/admin-table';
 import { AdminButton, AdminInput, AdminTextarea, AdminImageUpload } from '../../../components/common/admin-form-elements';
 import { apiService } from '../../../services/api';
+import { useLoadOnMount } from '../../../utils/use-load-on-mount';
 import { resolveImageUrl } from '../../../utils/image-url';
+import { confirmAction, notify } from '../../../components/common/admin-feedback';
 
 export default function HomepageCardsManager() {
   const [cards, setCards] = useState<any[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [currentCard, setCurrentCard] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    fetchCards();
-  }, []);
+  const loadCards = async () => {
+    const data = await apiService.get('/homepage_cards');
+    return data || [];
+  };
 
   const fetchCards = async () => {
     setLoading(true);
     try {
-      const data = await apiService.get('/homepage_cards');
-      setCards(data || []);
+      setCards(await loadCards());
     } catch (e) {
       console.error(e);
     }
     setLoading(false);
   };
+
+  useLoadOnMount(loadCards, setCards, { onSettled: () => setLoading(false) });
 
   const columns = [
     { key: 'title', label: 'Card Title' },
@@ -39,18 +44,20 @@ export default function HomepageCardsManager() {
   };
 
   const handleDelete = async (item: any) => {
-    if (confirm(`Are you sure you want to delete ${item.title}?`)) {
+    if (await confirmAction(`Are you sure you want to delete ${item.title}?`)) {
       try {
         await apiService.delete(`/homepage_cards/${item.id}`);
         setCards(cards.filter(c => c.id !== item.id));
       } catch (e) {
-        alert('Failed to delete');
+        notify('Failed to delete');
       }
     }
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
+    setSaving(true);
     try {
       const payload = {
         ...currentCard,
@@ -68,7 +75,9 @@ export default function HomepageCardsManager() {
       setIsEditing(false);
       setCurrentCard(null);
     } catch (e) {
-      alert('Failed to save card');
+      notify('Failed to save card');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -123,7 +132,7 @@ export default function HomepageCardsManager() {
             </div>
 
             <div style={{ display: 'flex', gap: '10px', marginTop: '30px' }}>
-              <AdminButton type="submit">Save Card</AdminButton>
+              <AdminButton type="submit" loading={saving}>{saving ? 'Saving...' : 'Save Card'}</AdminButton>
               <button type="button" onClick={() => { setIsEditing(false); setCurrentCard(null); }} className="btn btn-secondary">Cancel</button>
             </div>
           </form>
