@@ -1,0 +1,5 @@
+# Shell scripts must keep Unix line endings or they fail on the server.
+*.sh text eol=lf
+
+# SQL dumps are imported on Linux servers.
+*.sql text eol=lf
