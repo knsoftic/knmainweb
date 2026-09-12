@@ -1,6 +1,7 @@
 import { optimizedImage, resolveImageUrl } from '../../utils/image-url';
 import { revealDelay } from '../../utils/reveal';
 import { getImageSeo } from '../../utils/seo';
+import { isRealProfileUrl } from '../../utils/settings';
 
 export interface TeamMember {
   image_url?: string;
@@ -24,11 +25,13 @@ export async function PortraitTeamCard({ member, index = 0 }: { member: TeamMemb
   const imgSrc = member.image_url || member.image || '';
   const finalImgSrc = resolveImageUrl(imgSrc);
   const imgSeo = imgSrc ? await getImageSeo(imgSrc) : null;
+  // An unfilled profile field often holds the company homepage or the network's own front page.
+  // Hiding those icons is better than sending a visitor in a circle.
   const socials = [
     { url: member.facebook_url, label: 'Facebook', icon: 'fab fa-facebook-f' },
     { url: member.twitter_url, label: 'X / Twitter', icon: 'fab fa-x-twitter' },
     { url: member.linkedin_url, label: 'LinkedIn', icon: 'fab fa-linkedin-in' },
-  ].filter((social) => Boolean(social.url));
+  ].filter((social) => isRealProfileUrl(social.url));
 
   return (
     <article className="ks-card ks-card--hover ks-team-card" itemScope itemType="https://schema.org/Person" data-reveal="" style={revealDelay(index, 4)}>
@@ -38,6 +41,8 @@ export async function PortraitTeamCard({ member, index = 0 }: { member: TeamMemb
             itemProp="image"
             {...optimizedImage(finalImgSrc, '(max-width: 700px) 100vw, (max-width: 1100px) 50vw, 25vw')}
             alt={imgSeo?.alt_text || member.name}
+            width={800}
+            height={1000}
             title={imgSeo?.title}
             loading="lazy"
             decoding="async"

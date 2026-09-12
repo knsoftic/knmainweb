@@ -80,3 +80,28 @@ export async function fetchApi<T = any>(url: string, init?: RequestInit, timeout
   }
   return { ok: true, status: outcome.status, data: structuredClone(outcome.data) };
 }
+
+/**
+ * Checks that an image address actually serves something, and returns `fallback` when it does not.
+ *
+ * Used for the share card in link previews. A picture set in the admin panel points at the media
+ * server, and if that file has gone missing every link shared to WhatsApp or LinkedIn renders as a
+ * bare grey box - a failure nobody sees from the site itself. One cheap HEAD request per
+ * revalidation window is enough to notice and fall back to the copy shipped with the site.
+ */
+export const reachableImage = cache(async (url: string, fallback: string): Promise<string> => {
+  if (!url || url === fallback || url.startsWith('/')) {
+    return url || fallback;
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 3000);
+  try {
+    const res = await fetch(url, { method: 'HEAD', signal: controller.signal, next: { revalidate: 300 } });
+    return res.ok ? url : fallback;
+  } catch {
+    return fallback;
+  } finally {
+    clearTimeout(timer);
+  }
+});

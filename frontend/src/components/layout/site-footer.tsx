@@ -1,28 +1,50 @@
 "use client";
 
 import Link from 'next/link';
-import { getEnabledSocialLinks, getSetting } from '../../utils/settings';
+import { getRealSocialLinks, getSetting } from '../../utils/settings';
 import { resolveImageUrl } from '../../utils/image-url';
 import { getWhatsappNumber } from './site-settings';
+import { serviceAnchor } from '../../utils/site';
 
 const quickLinks = [
   { label: 'Home', href: '/' },
   { label: 'Services', href: '/services' },
   { label: 'Projects', href: '/projects' },
   { label: 'About Us', href: '/about' },
+  // /team is indexable and in the sitemap; without a link from somewhere it collects nothing.
+  { label: 'Our Team', href: '/team' },
   { label: 'Contact', href: '/contact' },
 ];
 
-const serviceLinks = [
+// Shown when the services list cannot be loaded. Each one still lands on the services page.
+const FALLBACK_SERVICE_LINKS = [
   { label: 'Web Development', href: '/services' },
-  { label: 'Mobile Apps', href: '/services' },
-  { label: 'UI/UX Design', href: '/services' },
-  { label: 'IT Courses', href: '/courses' },
-  { label: 'Tech Blog', href: '/blog' },
+  { label: 'Graphics Designing', href: '/services' },
+  { label: 'Digital Marketing', href: '/services' },
 ];
 
-export function SiteFooter({ settings }: { settings?: any }) {
-  const socialLinks = getEnabledSocialLinks(settings);
+/**
+ * Footer service links built from the services that actually exist, each pointing at that
+ * service's own section rather than dropping every visitor at the top of the same page.
+ */
+const buildServiceLinks = (services: any[]) => {
+  const real = (Array.isArray(services) ? services : [])
+    .map((service: any) => String(service?.title || '').trim())
+    .filter(Boolean)
+    .slice(0, 3)
+    .map((title: string) => ({ label: title, href: `/services#${serviceAnchor(title)}` }));
+
+  return [
+    ...(real.length ? real : FALLBACK_SERVICE_LINKS),
+    { label: 'IT Courses', href: '/courses' },
+    { label: 'Tech Blog', href: '/blog' },
+  ];
+};
+
+export function SiteFooter({ settings, services = [] }: { settings?: any; services?: any[] }) {
+  const serviceLinks = buildServiceLinks(services);
+  // Only profiles that really exist: an icon linking to linkedin.com's front page wastes a click.
+  const socialLinks = getRealSocialLinks(settings);
   const companyName = getSetting(settings, ['site_name', 'company_name'], 'KN Softic');
   const tagline = getSetting(settings, ['footer_text', 'website_tagline'], 'Software House & IT Institute');
   const address = getSetting(settings, ['contact_address', 'office_address', 'company_address'], 'Faisalabad, Pakistan');

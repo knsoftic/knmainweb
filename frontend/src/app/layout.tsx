@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { resolveImageUrl } from '../utils/image-url';
 import { apiUrl } from '../utils/api-url';
-import { safeFetch } from '../utils/safe-fetch';
+import { reachableImage, safeFetch } from '../utils/safe-fetch';
 import { SITE_URL, parseSiteUrl } from '../utils/site';
 
 async function fetchGlobalSeo() {
@@ -15,8 +15,18 @@ async function fetchSettings() {
 
 export async function generateMetadata(): Promise<Metadata> {
   const [globalSeo, settings] = await Promise.all([fetchGlobalSeo(), fetchSettings()]);
-  const favicon = globalSeo.favicon_url || settings?.favicon_url;
-  const shareImage = globalSeo.default_og_image || settings?.default_og_image_url;
+  // The share card ships with the site, so a link posted to WhatsApp or LinkedIn always has a
+  // picture even if the media server is unreachable. A value set in Admin → SEO still wins.
+  const SHIPPED_SHARE_IMAGE = '/og-image.jpg';
+  // A share image set in Admin → SEO is used when it really loads; if that file has gone missing
+  // the shipped card takes over, so a shared link never previews as an empty grey box.
+  const configuredShareImage = globalSeo.default_og_image || settings?.default_og_image_url;
+  const shareImage = configuredShareImage
+    ? await reachableImage(resolveImageUrl(configuredShareImage), SHIPPED_SHARE_IMAGE)
+    : SHIPPED_SHARE_IMAGE;
+  // Only the shipped card has known dimensions; claiming them for an uploaded image would be a lie
+  // to the networks that read these tags.
+  const shareImageSize = shareImage === SHIPPED_SHARE_IMAGE ? { width: 1200, height: 630 } : {};
 
   // Pages set their own canonical URL (see utils/seo.ts); a site-wide one would point every page at the homepage.
   return {
@@ -32,18 +42,22 @@ export async function generateMetadata(): Promise<Metadata> {
       index: true,
       follow: true,
     },
-    icons: {
-      icon: favicon ? resolveImageUrl(favicon) : '/assets/images/favicon/favicon-32x32.png',
-      apple: '/assets/images/favicon/apple-touch-icon.png',
-    },
+    // The tab icon deliberately comes from app/favicon.ico, app/icon.png and app/apple-icon.png,
+    // which are part of the build. It must never depend on the media server being up.
     manifest: '/assets/images/favicon/site.webmanifest',
     openGraph: {
       images: [
         {
-          url: shareImage ? resolveImageUrl(shareImage) : '/assets/images/cover-object.png',
+          url: shareImage,
+          ...shareImageSize,
         },
       ],
       siteName: globalSeo.website_title || 'KN Softic',
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      images: [shareImage],
     },
     verification: {
       google: globalSeo.search_console_code || undefined,

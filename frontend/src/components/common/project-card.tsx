@@ -35,6 +35,8 @@ export async function ProjectCard({ project, index = 0, columns = 3 }: { project
             <img
               {...optimizedImage(imageUrl, '(max-width: 700px) 100vw, (max-width: 1100px) 50vw, 25vw')}
               alt={imgSeo.alt_text || project.title}
+              width={1600}
+              height={1000}
               title={imgSeo.title}
               loading="lazy"
               decoding="async"

@@ -493,6 +493,60 @@ const runOnce = async (name, work) => {
   await db.query('INSERT INTO app_migrations (name) VALUES (?)', [name]);
 };
 
+const fixAboutHeadingGrammar = async () => {
+  if (!(await columnExists('settings', 'about_title'))) return;
+
+  // "What make us the best?" sits above the About section, where a visitor is deciding whether
+  // this company is careful with details. Only the exact wrong sentence is touched.
+  const result = await db.query(
+    "UPDATE settings SET about_title = 'What makes us the best?' WHERE TRIM(about_title) = 'What make us the best?'"
+  );
+  if (result.affectedRows > 0) {
+    console.log('Corrected the About heading to "What makes us the best?".');
+  }
+};
+
+const tidyCourseText = async () => {
+  if (!(await tableExists('courses'))) return;
+
+  const courses = await db.query('SELECT id, title, duration FROM courses');
+  let changed = 0;
+
+  for (const course of courses) {
+    const updates = {};
+
+    // "3 Months", "4 MONTHS" and "3 months" were all in use in one field.
+    const duration = String(course.duration || '').trim();
+    const tidyDuration = duration.replace(
+      /^(\d+(?:\.\d+)?)\s*(day|week|month|year)s?$/i,
+      (_match, count, unit) => `${count} ${unit[0].toUpperCase()}${unit.slice(1).toLowerCase()}${Number(count) === 1 ? '' : 's'}`
+    );
+    if (tidyDuration !== duration && tidyDuration) {
+      updates.duration = tidyDuration;
+    }
+
+    // "HUMAN RESOURCES(HR)" - a missing space before a bracket, which reads as a typo.
+    const title = String(course.title || '');
+    const tidyTitle = title.replace(/(\S)\(/g, '$1 (');
+    if (tidyTitle !== title) {
+      updates.title = tidyTitle;
+    }
+
+    const fields = Object.keys(updates);
+    if (!fields.length) continue;
+
+    await db.query(
+      `UPDATE courses SET ${fields.map((field) => `${field} = ?`).join(', ')} WHERE id = ?`,
+      [...fields.map((field) => updates[field]), course.id]
+    );
+    changed += 1;
+  }
+
+  if (changed > 0) {
+    console.log(`Tidied the wording on ${changed} course${changed === 1 ? '' : 's'}.`);
+  }
+};
+
 const hideTemplateHomepageCards = async () => {
   if (!(await tableExists('homepage_cards'))) return;
 
@@ -560,6 +614,8 @@ const relaxOptionalColumns = async () => {
     await repairHeroSlideIds();
     await relaxOptionalColumns();
     await runOnce('hide-template-homepage-cards', hideTemplateHomepageCards);
+    await runOnce('fix-about-heading-grammar', fixAboutHeadingGrammar);
+    await runOnce('tidy-course-text', tidyCourseText);
     console.log('Database migrations completed successfully.');
     process.exit(0);
   } catch (err) {

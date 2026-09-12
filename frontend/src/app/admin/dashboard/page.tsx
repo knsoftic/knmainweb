@@ -48,7 +48,7 @@ export default function DashboardPage() {
           <h1>Dashboard</h1>
           <p>An overview of your website content. Pick a card or a shortcut to start editing.</p>
         </div>
-        <a href="/" target="_blank" rel="noreferrer" className="admin-page-head__action">
+        <a href="/" target="_blank" rel="noopener noreferrer" className="admin-page-head__action">
           <i className="fa fa-external-link" aria-hidden="true"></i> View website
         </a>
       </header>

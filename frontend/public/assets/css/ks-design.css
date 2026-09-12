@@ -11,6 +11,9 @@
   --ks-purple: #8D18D0;
   --ks-indigo: #3930C7;
   --ks-violet: #7a6ad8;
+  /* The same violet is too light for small text (4.30:1 on white, 3.82:1 on a lilac chip).
+     This darker step is for wording only; the lighter one stays for borders and shapes. */
+  --ks-violet-text: #5b49b8;
   --ks-indigo-600: #4f46e5;
   --ks-lilac: #c084fc;
   --ks-grad: linear-gradient(135deg, #8D18D0 0%, #3930C7 100%);
@@ -21,7 +24,9 @@
   --ks-ink: #1e1e1e;
   --ks-ink-2: #1a1a2e;
   --ks-text: #4a4a4a;
-  --ks-muted: #888;
+  /* Supporting text. #888 measured 3.54:1 on white, below the 4.5:1 that WCAG AA asks for at
+     these sizes; this reads the same but clears it at 5.96:1. */
+  --ks-muted: #5d6470;
   --ks-canvas: #f0f2f8;
   --ks-surface: #ffffff;
   --ks-tint: #f1f0fe;
@@ -263,7 +268,7 @@
   padding: 6px 12px;
   border-radius: 8px;
   background: var(--ks-tint);
-  color: var(--ks-violet);
+  color: var(--ks-violet-text);
   font-size: 0.78rem;
   font-weight: 600;
   line-height: 1.2;
@@ -278,7 +283,7 @@
   -webkit-backdrop-filter: blur(10px);
 }
 .ks-chip--white { background: #fff; color: var(--ks-purple); box-shadow: var(--ks-shadow-sm); }
-.ks-chip--outline { background: transparent; border: 1px solid var(--ks-line-strong); color: var(--ks-violet); }
+.ks-chip--outline { background: transparent; border: 1px solid var(--ks-line-strong); color: var(--ks-violet-text); }
 
 .ks-badge {
   display: inline-flex;
@@ -793,6 +798,13 @@
   transition: background-color 0.3s;
 }
 .ks-hero__dot:hover::before { background: rgba(255, 255, 255, 0.5); }
+/* A 24px-tall bar is too small a target for a thumb. This invisible overlay brings the tappable
+   area to 44px without changing the bar or the layout around it. */
+.ks-hero__dot::after {
+  content: '';
+  position: absolute;
+  inset: -10px -4px;
+}
 .ks-hero__dot.is-active { width: 64px; }
 /* Fills while the slide is showing; when it finishes the next slide appears (hero-slider.tsx). */
 .ks-hero__dot-fill {
@@ -1204,12 +1216,17 @@
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--ks-violet);
+  color: var(--ks-violet-text);
 }
 .ks-team-card__social { display: flex; gap: 6px; padding: 0; margin: 0; list-style: none; }
 .ks-team-card__social a {
+  /* Drawn at 34px but 44px to a thumb: the extra area is padding, so nothing looks bigger. */
   width: 34px;
   height: 34px;
+  min-width: 44px;
+  min-height: 44px;
+  background-clip: content-box;
+  padding: 5px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2360,4 +2377,45 @@ html.ks-reveal-ready [data-reveal='stagger']:not([data-revealed]):not([data-reve
   .ks-fab { right: 16px; width: 50px; height: 50px; }
   .ks-fab--whatsapp { bottom: 16px; }
   .ks-fab--top { bottom: 76px; }
+}
+
+/* ------------------------------------------------------------------ Accessibility additions */
+
+/* Keyboard users land on this first and can jump straight past the navigation. It sits off-screen
+   until focused, then appears under the header. */
+.ks-skip-link {
+  position: fixed;
+  top: -100px;
+  left: 16px;
+  z-index: 2000;
+  padding: 12px 20px;
+  border-radius: 0 0 12px 12px;
+  background: var(--ks-purple);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: var(--ks-shadow-md);
+  transition: top 0.2s var(--ks-ease);
+}
+.ks-skip-link:focus-visible,
+.ks-skip-link:focus {
+  top: 0;
+  color: #fff;
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+}
+
+/* Linking to /services#service-web-development must not park the card under the fixed header. */
+.ks-service-card[id] {
+  scroll-margin-top: 110px;
+}
+
+/* Small text links sit on one line of text, which is under the 40px a thumb needs. Padding the
+   line box out vertically costs nothing visually because the lines around it are already spaced. */
+@media (hover: none) {
+  .ks-footer__links a,
+  .ks-footer__contact a {
+    display: inline-block;
+    padding-block: 7px;
+  }
 }

@@ -9,6 +9,7 @@ import LikeButton from '../../../../components/blog/LikeButton';
 import CommentForm from '../../../../components/blog/CommentForm';
 import ShareButtons from '../../../../components/blog/ShareButtons';
 import { JsonLd } from '../../../../components/seo/json-ld';
+import { safeCanonical } from '../../../../utils/seo';
 import { PageHeroBackground } from '../../../../components/common/page-hero';
 import { SplitWords } from '../../../../components/common/split-words';
 import { apiUrl } from '../../../../utils/api-url';
@@ -102,7 +103,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description: post.meta_description || post.excerpt,
     keywords: post.meta_keywords,
     alternates: {
-      canonical: post.canonical_url || postPath(post.slug),
+      canonical: safeCanonical(post.canonical_url, postPath(post.slug)),
     },
     openGraph: {
       type: 'article',

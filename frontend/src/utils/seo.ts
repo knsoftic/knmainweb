@@ -55,6 +55,17 @@ export const PAGE_DEFAULTS: Record<string, PageDefaults> = {
 // Anything other than an explicit 0/false means "index" (older databases lack these columns).
 const isEnabled = (value: unknown) => !(value === 0 || value === false || value === '0');
 
+/**
+ * The canonical URL for a page is always that page's own route.
+ *
+ * A canonical saved in the admin panel used to be trusted as-is. One blog post held a slug built
+ * from its title rather than its address, so the site told Google the real page lived at a URL
+ * that returns 404 - which normally drops the post from the index altogether. Every page on this
+ * site is its own canonical, so there is nothing a hand-typed value can add and a great deal it
+ * can break. The field is accepted in the admin panel and deliberately ignored here.
+ */
+export const safeCanonical = (_saved: unknown, actualPath: string) => actualPath;
+
 export async function generatePageMetadata(slug: string, dynamicOverrides?: Partial<Metadata>): Promise<Metadata> {
   const defaults = PAGE_DEFAULTS[slug] || { path: `/${slug}`, description: '' };
   const [pageSeo, globalSeo] = await Promise.all([
@@ -64,7 +75,7 @@ export async function generatePageMetadata(slug: string, dynamicOverrides?: Part
 
   const title: string | undefined = pageSeo?.seo_title || defaults.title;
   const description: string | undefined = pageSeo?.meta_description || defaults.description || undefined;
-  const canonical: string = pageSeo?.canonical_url || defaults.path;
+  const canonical: string = safeCanonical(pageSeo?.canonical_url, defaults.path);
   const siteName: string = globalSeo?.website_title || SITE_NAME;
   const shareTitle = pageSeo?.og_title || (title ? `${title} | ${siteName}` : globalSeo?.meta_title || siteName);
   const shareImage = resolveImageUrl(pageSeo?.og_image || globalSeo?.default_og_image, '/assets/images/cover-object.png');

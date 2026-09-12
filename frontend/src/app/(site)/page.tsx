@@ -83,9 +83,6 @@ export default async function HomePage() {
   return (
     <>
       <PageSchema slug="home" />
-      <h1 className="ks-visually-hidden">
-        {pageSeo?.h1_heading || 'KN Softic - Software House & IT Institute'}
-      </h1>
       <HeroSlider slides={heroSlides} stats={funFacts} marquee={marquee} />
 
       {homepageCards.length > 0 && (

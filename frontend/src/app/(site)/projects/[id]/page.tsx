@@ -141,12 +141,12 @@ export default async function ProjectPage({ params }: Props) {
 
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '32px' }}>
                 {project.primary_link_url && (
-                  <a href={project.primary_link_url} className="ks-btn ks-btn--primary" target="_blank" rel="noreferrer">
+                  <a href={project.primary_link_url} className="ks-btn ks-btn--primary" target="_blank" rel="noopener noreferrer">
                     {project.primary_link_label || 'View Live'} <i className="fa fa-arrow-up-right-from-square" aria-hidden="true"></i>
                   </a>
                 )}
                 {project.secondary_link_url && (
-                  <a href={project.secondary_link_url} className="ks-btn ks-btn--outline" target="_blank" rel="noreferrer">
+                  <a href={project.secondary_link_url} className="ks-btn ks-btn--outline" target="_blank" rel="noopener noreferrer">
                     {project.secondary_link_label || 'Open Link'} <i className="fa fa-link" aria-hidden="true"></i>
                   </a>
                 )}

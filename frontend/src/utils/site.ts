@@ -16,3 +16,14 @@ export function parseSiteUrl(value?: string | null): URL | null {
     return null;
   }
 }
+
+/**
+ * Anchor id for one service on the services page, so the footer can link straight to it
+ * ("Web Development" → /services#web-development) instead of dropping the visitor at the top of
+ * a list and leaving them to find it.
+ */
+export const serviceAnchor = (title: string) =>
+  `service-${String(title || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')}`;

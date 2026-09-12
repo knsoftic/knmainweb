@@ -22,6 +22,8 @@ export const CourseCard = ({ course }: { course: any }) => {
         <img
           {...optimizedImage(imageSrc, '(max-width: 700px) 100vw, (max-width: 1100px) 50vw, 33vw')}
           alt={course.title}
+          width={1600}
+          height={1000}
           loading="lazy"
           decoding="async"
         />
@@ -42,7 +44,7 @@ export const CourseCard = ({ course }: { course: any }) => {
           <a
             href={enrollUrl}
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             className="ks-btn ks-btn--primary ks-btn--sm"
             aria-label={`Enroll now in ${course.title}`}
           >

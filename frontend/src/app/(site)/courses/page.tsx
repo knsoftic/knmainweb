@@ -3,11 +3,13 @@ import { PageHero } from '../../../components/common/page-hero';
 import { FilteredGrid } from '../../../components/common/filtered-grid';
 import { CourseCard } from '../../../components/common/course-card';
 import { SectionHeader } from '../../../components/common/section-header';
-import { PageSchema } from '../../../components/seo/json-ld';
+import { JsonLd, PageSchema } from '../../../components/seo/json-ld';
 import { safeFetch } from '../../../utils/safe-fetch';
 import { apiUrl } from '../../../utils/api-url';
 import { generatePageMetadata } from '../../../utils/seo';
 import { revealDelay } from '../../../utils/reveal';
+import { resolveImageUrl } from '../../../utils/image-url';
+import { SITE_NAME, SITE_URL } from '../../../utils/site';
 
 export async function generateMetadata() {
   return generatePageMetadata('courses');
@@ -37,9 +39,44 @@ export default async function CoursesPage() {
   const heroDescription = 'Professional IT courses with certifications, hands-on projects, and career support.'
     + (studentsCount > 0 ? ` Join ${studentsCount}+ trained students.` : '');
 
+  // Course records, so a search engine can show these as courses rather than as page text.
+  const courseSchema = courses.length
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'ItemList',
+        name: 'IT courses at KN Softic',
+        itemListElement: courses.map((course: any, index: number) => ({
+          '@type': 'ListItem',
+          position: index + 1,
+          item: {
+            '@type': 'Course',
+            name: course.title,
+            description: course.description || course.short_description || undefined,
+            url: `${SITE_URL}/courses`,
+            ...(course.image_url ? { image: resolveImageUrl(course.image_url) } : {}),
+            provider: {
+              '@type': 'EducationalOrganization',
+              name: SITE_NAME,
+              url: SITE_URL,
+            },
+            ...(course.duration
+              ? {
+                  hasCourseInstance: {
+                    '@type': 'CourseInstance',
+                    courseMode: 'onsite',
+                    courseWorkload: course.duration,
+                  },
+                }
+              : {}),
+          },
+        })),
+      }
+    : null;
+
   return (
     <>
       <PageSchema slug="courses" />
+      <JsonLd data={courseSchema} />
       <PageHero
         badge="IT COURSES"
         title={pageSeo?.h1_heading || "Our Courses"}

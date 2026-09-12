@@ -7,6 +7,7 @@ import { PageSchema } from '../../../components/seo/json-ld';
 import { safeFetch } from '../../../utils/safe-fetch';
 import { apiUrl } from '../../../utils/api-url';
 import { generatePageMetadata } from '../../../utils/seo';
+import { serviceAnchor } from '../../../utils/site';
 import { renderInlineBold } from '../../../utils/inline-bold';
 import { iconClass } from '../../../utils/icon-class';
 
@@ -68,7 +69,7 @@ export default async function ServicesPage() {
                 id: service.id,
                 filter: String(filterClass ?? ''),
                 content: (
-                  <article className="ks-card ks-card--hover ks-service-card">
+                  <article className="ks-card ks-card--hover ks-service-card" id={serviceAnchor(service.title)}>
                     <div className="ks-card__body">
                       <span className="ks-icon-tile" aria-hidden="true">
                         <i className={iconClass(service.icon)}></i>

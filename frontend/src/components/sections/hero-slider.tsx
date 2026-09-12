@@ -124,7 +124,13 @@ export function HeroSlider({ slides, stats = [], marquee = [] }: HeroSliderProps
                       <span className="ks-badge__dot" aria-hidden="true"></span> {slide.badge_text}
                     </span>
                   )}
-                  <h2 className="ks-display ks-hero__title"><SplitWords text={slide.title} /></h2>
+                  {index === 0 ? (
+                    // The first slide carries the page's H1: search engines and screen readers
+                    // should see the same headline a visitor does.
+                    <h1 className="ks-display ks-hero__title"><SplitWords text={slide.title} /></h1>
+                  ) : (
+                    <h2 className="ks-display ks-hero__title"><SplitWords text={slide.title} /></h2>
+                  )}
                   {slide.description && <p className="ks-hero__desc">{slide.description}</p>}
                   <div className="ks-hero__actions">
                     {slide.btn_primary_text && (

@@ -13,6 +13,7 @@ type SiteShellProps = {
   children: React.ReactNode;
   /** Settings loaded on the server by the (site) layout; null if the API failed. */
   initialSettings?: any;
+  services?: any[];
 };
 
 const navItems = [
@@ -25,7 +26,7 @@ const navItems = [
   { label: 'Contact', href: '/contact' },
 ];
 
-export function SiteShell({ children, initialSettings = null }: SiteShellProps) {
+export function SiteShell({ children, initialSettings = null, services = [] }: SiteShellProps) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -93,6 +94,9 @@ export function SiteShell({ children, initialSettings = null }: SiteShellProps) 
   return (
     <SiteSettingsProvider settings={settings}>
       <MotionEffects />
+      {/* First thing a keyboard reaches, so a visitor can jump past eight navigation links.
+          Invisible until it is focused. */}
+      <a href="#main-content" className="ks-skip-link">Skip to content</a>
       <span className="ks-scroll-progress" aria-hidden="true"></span>
       <header className={`ks-header${scrolled || menuOpen ? ' is-scrolled' : ''}${headerHidden && !menuOpen ? ' is-hidden' : ''}`}>
         <div className="ks-container ks-header__bar">
@@ -165,11 +169,11 @@ export function SiteShell({ children, initialSettings = null }: SiteShellProps) 
         </div>
       </header>
 
-      <main>{children}</main>
+      <main id="main-content">{children}</main>
 
       {pathname !== '/contact' && <ContactWidget />}
 
-      <SiteFooter settings={settings} />
+      <SiteFooter settings={settings} services={services} />
 
       <a
         href={`https://wa.me/${getWhatsappNumber(settings)}?text=Hello!%20I%20visited%20your%20website%20and%20want%20to%20inquire%20about%20your%20services.`}

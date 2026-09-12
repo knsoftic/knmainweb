@@ -11,6 +11,8 @@ const devImagePatterns = isDev
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   outputFileTracingRoot: process.cwd(),
+  // Don't advertise the framework and its version to anyone probing for known weaknesses.
+  poweredByHeader: false,
   images: {
     remotePatterns: [
       {
@@ -30,7 +32,27 @@ const nextConfig = {
     ...(isDev ? { dangerouslyAllowLocalIP: true } : {}),
   },
   async headers() {
+    // Sent on every page. Deliberately conservative: each one closes a specific hole without
+    // being able to block a script, style or image the site actually needs.
+    const securityHeaders = [
+      // Only ever reach this site over HTTPS, for a year, including subdomains.
+      { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
+      // Treat every file as the type the server declared - an upload cannot pose as a script.
+      { key: 'X-Content-Type-Options', value: 'nosniff' },
+      // No other site may embed these pages, so the site cannot be used for clickjacking.
+      { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+      { key: 'Content-Security-Policy', value: "frame-ancestors 'self'" },
+      // Send the full address only to ourselves; other sites see the domain alone.
+      { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+      // The site needs none of these, so refuse them outright.
+      { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()' },
+    ];
+
     return [
+      {
+        source: '/:path*',
+        headers: securityHeaders,
+      },
       {
         // The template's CSS, fonts and images in public/assets. Their names never change, so a
         // visitor should download them once rather than on every page. A deployment that changes

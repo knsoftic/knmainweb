@@ -82,7 +82,7 @@ export function AdminSidebar({ isOpen, isMobile, onClose }: { isOpen?: boolean, 
         </nav>
 
         <div className="admin-sidebar__footer">
-          <a href="/" target="_blank" rel="noreferrer" className="admin-sidebar__view-site">
+          <a href="/" target="_blank" rel="noopener noreferrer" className="admin-sidebar__view-site">
             <i className="fa fa-external-link" aria-hidden="true"></i> View website
           </a>
         </div>

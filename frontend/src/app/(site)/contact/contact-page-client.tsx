@@ -209,22 +209,22 @@ export function ContactPageClient({ pageSeo, courseNames }: ContactPageClientPro
                     Fill out the form below and our engineering & support team will respond within 24 hours.
                   </p>
 
-                  <form onSubmit={handleSubmit} className="ks-form" noValidate>
+                  <form onSubmit={handleSubmit} className="ks-form">
                     <div>
                       <label htmlFor="contact-name" className="ks-label">Full Name <span className="text-danger">*</span></label>
-                      <input type="text" id="contact-name" name="name" autoComplete="name" value={formData.name} onChange={handleChange} className="ks-input" placeholder="e.g. Ali Khan" />
+                      <input type="text" id="contact-name" name="name" autoComplete="name" required value={formData.name} onChange={handleChange} className="ks-input" placeholder="e.g. Ali Khan" />
                     </div>
                     <div>
                       <label htmlFor="contact-email" className="ks-label">Email Address <span className="text-danger">*</span></label>
-                      <input type="text" inputMode="email" autoComplete="email" id="contact-email" name="email" value={formData.email} onChange={handleChange} className="ks-input" placeholder="e.g. you@company.com" />
+                      <input type="email" inputMode="email" autoComplete="email" id="contact-email" name="email" required value={formData.email} onChange={handleChange} className="ks-input" placeholder="e.g. you@company.com" />
                     </div>
                     <div>
-                      <label htmlFor="contact-phone" className="ks-label">Phone / WhatsApp</label>
+                      <label htmlFor="contact-phone" className="ks-label">Phone / WhatsApp <span className="ks-meta">(optional)</span></label>
                       <input type="tel" id="contact-phone" name="phone" autoComplete="tel" value={formData.phone} onChange={handleChange} className="ks-input" placeholder="+92 300 0000000" />
                     </div>
                     <div>
                       <label htmlFor="cSubject" className="ks-label">Subject / Interest <span className="text-danger">*</span></label>
-                      <select id="cSubject" name="subject" value={formData.subject} onChange={handleChange} className="ks-input">
+                      <select id="cSubject" name="subject" required value={formData.subject} onChange={handleChange} className="ks-input">
                         <option value="" disabled>Select inquiry type...</option>
                         <optgroup label="Software & Digital Solutions">
                           <option value="Custom Software / Web">Web & Custom Software</option>
@@ -255,6 +255,7 @@ export function ContactPageClient({ pageSeo, courseNames }: ContactPageClientPro
                         value={formData.message}
                         onChange={handleChange}
                         maxLength={500}
+                        required
                         className="ks-input"
                         placeholder="Tell us about your project timeline, goals, or the specific course you wish to join..."
                       ></textarea>

@@ -1,7 +1,6 @@
 import Script from 'next/script';
 import { JsonLd } from './json-ld';
-import { resolveImageUrl } from '../../utils/image-url';
-import { getEnabledSocialLinks, getSetting } from '../../utils/settings';
+import { getRealSocialLinks, getSetting, toOpeningHours, toPostalAddress } from '../../utils/settings';
 import { SITE_NAME, SITE_URL, parseSiteUrl } from '../../utils/site';
 
 // Tracking IDs are interpolated into inline scripts, so only well-formed IDs are accepted.
@@ -21,18 +20,44 @@ export function SiteScripts({ globalSeo, settings }: SiteScriptsProps) {
 
   const siteUrl = parseSiteUrl(globalSeo?.site_url)?.origin || SITE_URL;
   const name = globalSeo?.website_title || getSetting(settings, ['site_name', 'company_name'], SITE_NAME);
-  const logo = resolveImageUrl(globalSeo?.logo_url || settings?.logo_url, '');
+  // Google reads this logo for knowledge panels and search results, so it points at a square image
+  // shipped with the site rather than one on the media server, which would take the entry down
+  // with it if that server were ever unreachable.
+  const logo = `${siteUrl}/assets/images/kn-softic-mark.png`;
+
+  // The number quoted here must be the one on the page: Google cross-checks it against the
+  // business profile, and a mismatch weakens local ranking. The footer shows contact_phone first.
+  const primaryPhone = getSetting(settings, ['contact_phone', 'whatsapp_number', 'customer_care_number', 'phone_number']);
+  const landline = getSetting(settings, ['phone_number']);
+
+  const addressText = getSetting(settings, ['office_address', 'contact_address', 'company_address']);
+  const postalAddress = toPostalAddress(addressText, name);
+  const openingHours = toOpeningHours(getSetting(settings, ['working_hours']));
 
   const organization = globalSeo?.schema_organization || {
     '@context': 'https://schema.org',
-    '@type': 'Organization',
+    // A software house that also runs a training institute is both of these.
+    '@type': ['LocalBusiness', 'EducationalOrganization'],
+    '@id': `${siteUrl}/#organization`,
     name,
     url: siteUrl,
-    ...(logo ? { logo } : {}),
+    logo,
+    image: logo,
+    description: getSetting(settings, ['company_description', 'website_tagline']) || undefined,
     email: getSetting(settings, ['primary_email', 'contact_email']) || undefined,
-    telephone: getSetting(settings, ['phone_number', 'contact_phone']) || undefined,
-    address: getSetting(settings, ['office_address', 'contact_address', 'company_address']) || undefined,
-    sameAs: getEnabledSocialLinks(settings).map((link) => link.url),
+    telephone: primaryPhone || undefined,
+    address: postalAddress || addressText || undefined,
+    ...(openingHours ? { openingHours } : {}),
+    ...(landline && landline !== primaryPhone
+      ? {
+          contactPoint: [
+            { '@type': 'ContactPoint', telephone: primaryPhone, contactType: 'customer support', areaServed: 'PK' },
+            { '@type': 'ContactPoint', telephone: landline, contactType: 'sales', areaServed: 'PK' },
+          ],
+        }
+      : {}),
+    // Only profiles that actually exist: a link to a network's front page is an invalid signal.
+    sameAs: getRealSocialLinks(settings).map((link) => link.url),
   };
 
   const website = globalSeo?.schema_website || {

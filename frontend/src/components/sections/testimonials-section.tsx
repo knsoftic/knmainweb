@@ -71,6 +71,7 @@ export function TestimonialsSection({ testimonials = [] }: { testimonials?: any[
                   [128]
                 )}
                 alt=""
+                aria-hidden="true"
                 width={54}
                 height={54}
                 className="ks-quote__avatar"
