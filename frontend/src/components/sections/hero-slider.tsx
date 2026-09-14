@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { optimizedImage, resolveImageUrl } from '../../utils/image-url';
 import { SplitWords } from '../common/split-words';
 import type { ImageSize } from '../../utils/image-size';
@@ -63,6 +63,21 @@ export function HeroSlider({ slides, stats = [], marquee = [] }: HeroSliderProps
   const pointerFrame = useRef(0);
 
   const goTo = (index: number) => setCurrentIndex(((index % count) + count) % count);
+
+  // Autoplay starts once the visitor does something - moves the pointer, scrolls, taps or presses
+  // a key. Until a visitor interacts, Chrome counts any larger content that appears as the page's
+  // Largest Contentful Paint, and a slide that changes by itself brings in a new picture and
+  // paragraph that are often larger. On a slow phone that made the measurement land wherever the
+  // carousel happened to be. Real visitors interact within moments, and the arrows and dots work
+  // at any time.
+  const [autoplayArmed, setAutoplayArmed] = useState(false);
+  useEffect(() => {
+    if (autoplayArmed) return;
+    const events = ['pointermove', 'pointerdown', 'keydown', 'scroll', 'touchstart', 'wheel'];
+    const arm = () => setAutoplayArmed(true);
+    events.forEach((type) => window.addEventListener(type, arm, { once: true, passive: true }));
+    return () => events.forEach((type) => window.removeEventListener(type, arm));
+  }, [autoplayArmed]);
   const heroStats = stats.slice(0, 4);
   const showBar = heroStats.length > 0 || count > 1;
   const showMarquee = marquee.length >= 3;
@@ -96,7 +111,7 @@ export function HeroSlider({ slides, stats = [], marquee = [] }: HeroSliderProps
   return (
     <section
       ref={sectionRef}
-      className={`ks-hero${showMarquee ? '' : ' ks-hero--plain'}`}
+      className={`ks-hero${showMarquee ? '' : ' ks-hero--plain'}${autoplayArmed ? '' : ' is-waiting'}`}
       id="top"
       style={{ '--autoplay': `${AUTOPLAY_MS}ms` } as React.CSSProperties}
       aria-roledescription={count > 1 ? 'carousel' : undefined}
