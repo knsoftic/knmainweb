@@ -100,7 +100,7 @@ export default async function HomePage() {
                     {/* Gradient tile behind the icon: the default card icons are white. */}
                     <span className="ks-icon-tile ks-icon-tile--lg ks-icon-tile--grad" aria-hidden="true">
                       <img
-                        {...optimizedImage(resolveImageUrl(card.image_url, '/assets/images/service-01.png'), '64px', [128])}
+                        {...optimizedImage(resolveImageUrl(card.image_url, '/assets/images/service-01.png'), '44px', [48, 96, 128])}
                         // Its container is aria-hidden, so screen readers still skip it (the title
                         // sits right below); the text is for image search, which ignores that.
                         alt={`${card.title} icon`}

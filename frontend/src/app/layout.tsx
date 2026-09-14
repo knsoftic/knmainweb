@@ -82,12 +82,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" data-scroll-behavior="smooth">
       <head>
-        {/* Each extra origin costs a DNS lookup and a TLS handshake before its file can even start
-            downloading. Warming the font origins here overlaps that setup with the HTML download. */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* Inter is served from this site now (see ks-design.css), so the only third-party origin
+            left is the one hosting Conthrax. Connecting to it early saves a DNS lookup and TLS
+            handshake before the preloaded font below can start downloading. */}
         <link rel="preconnect" href="https://fonts.cdnfonts.com" crossOrigin="anonymous" />
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
         {/* Conthrax, the headline font. Its @font-face is in ks-design.css; preloading the file here
             means the browser starts fetching it as soon as it reads the page, instead of only after
             discovering it inside a stylesheet. */}

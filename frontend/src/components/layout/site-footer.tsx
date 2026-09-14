@@ -81,7 +81,7 @@ export function SiteFooter({ settings, services = [], logoSize = null }: { setti
             <Link href="/" className="ks-footer__logo" aria-label={`${companyName} home`}>
               {logoUrl ? (
                 <img
-                  {...optimizedImage(resolveImageUrl(logoUrl), '200px', [384, 640])}
+                  {...optimizedImage(resolveImageUrl(logoUrl), '200px', [256, 384, 640])}
                   {...(logoSize ? { width: logoSize.width, height: logoSize.height } : {})}
                   alt={companyName}
                   loading="lazy"

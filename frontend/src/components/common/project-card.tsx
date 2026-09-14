@@ -34,7 +34,7 @@ export async function ProjectCard({ project, index = 0, columns = 3 }: { project
               aria-hidden="true"
             ></span>
             <img
-              {...optimizedImage(imageUrl, '(max-width: 700px) 100vw, (max-width: 1100px) 50vw, 25vw')}
+              {...optimizedImage(imageUrl, '(max-width: 700px) calc(100vw - 36px), (max-width: 1799px) 375px, 460px')}
               alt={imgSeo.alt_text || project.title}
               width={imgSize?.width ?? 1600}
               height={imgSize?.height ?? 1000}

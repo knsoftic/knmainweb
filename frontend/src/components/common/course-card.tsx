@@ -20,7 +20,8 @@ export const CourseCard = ({ course }: { course: any }) => {
     <article className="ks-card ks-card--hover ks-course-card">
       <div className="ks-course-card__media">
         <img
-          {...optimizedImage(imageSrc, '(max-width: 700px) 100vw, (max-width: 1100px) 50vw, 33vw')}
+          // Measured: 338px on a phone, ~400px from tablets to laptops, 471px on a wide monitor.
+          {...optimizedImage(imageSrc, '(max-width: 700px) calc(100vw - 36px), (max-width: 1799px) 410px, 480px')}
           alt={course.title}
           // Real dimensions are looked up on the server (course.image_size); the frame's CSS
           // aspect-ratio decides the layout either way, so 16:10 is only a fallback.

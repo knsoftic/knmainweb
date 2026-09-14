@@ -166,8 +166,9 @@ export function HeroSlider({ slides, stats = [], marquee = [] }: HeroSliderProps
                     <img
                       {...optimizedImage(
                         resolveImageUrl(slide.image_url, '/assets/images/cover-object.png'),
-                        '(max-width: 900px) 90vw, 620px',
-                        [384, 640, 828, 1200]
+                        // Measured: 226px on a phone, 346-365px up to laptops, 439px on a wide monitor.
+                        '(max-width: 600px) 62vw, (max-width: 1799px) 380px, 440px',
+                        [256, 384, 480, 640, 828]
                       )}
                       alt={slide.title}
                       // The slide's real dimensions (looked up on the server), so the stage keeps its

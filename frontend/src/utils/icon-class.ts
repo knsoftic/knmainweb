@@ -8,6 +8,8 @@ export function iconClass(icon?: string | null, fallback = 'fa-desktop') {
   if (!value) return `fa ${fallback}`;
   if (value.includes(' ')) return value;
   if (value.startsWith('fa-')) return `fa ${value}`;
-  if (value.startsWith('bi-')) return `bi ${value}`;
+  // Bootstrap Icons is no longer loaded (every icon on the site is Font Awesome), so a "bi-" name
+  // would render as an empty space. Show the fallback icon instead of nothing.
+  if (value.startsWith('bi-')) return `fa ${fallback}`;
   return `fab fa-${value.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
 }

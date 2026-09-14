@@ -33,9 +33,21 @@ export function MotionEffects() {
       );
 
       const scan = () => {
-        document.querySelectorAll<HTMLElement>(REVEAL_PENDING).forEach((element) => {
+        const pending = Array.from(document.querySelectorAll<HTMLElement>(REVEAL_PENDING));
+        if (!pending.length) return;
+
+        // Every position is read first and every attribute written afterwards. Alternating the two
+        // made the browser recalculate styles once per element - each attribute below changes
+        // which CSS rules apply, and the next position read has to wait for that to be worked out.
+        // The attributes only affect opacity, so no position can differ between the two orders.
+        const limit = window.innerHeight * 0.92;
+        const onScreen = pending.map((element) => {
           const rect = element.getBoundingClientRect();
-          if (rect.top < window.innerHeight * 0.92 && rect.bottom > 0) {
+          return rect.top < limit && rect.bottom > 0;
+        });
+
+        pending.forEach((element, index) => {
+          if (onScreen[index]) {
             element.setAttribute('data-reveal-done', '');
           } else {
             element.setAttribute('data-reveal-watch', '');
@@ -47,11 +59,24 @@ export function MotionEffects() {
       scan();
       root.classList.add('ks-reveal-ready');
 
-      // Runs before the browser paints the new nodes, so fresh on-screen content never blinks.
-      const mutations = new MutationObserver(scan);
+      // React can insert many nodes in one go (hydration, a route change, a filter), and each
+      // insertion is its own mutation. Coalescing them into one scan per frame avoids querying the
+      // whole page dozens of times; the frame callback still runs before the browser paints, so
+      // fresh on-screen content never blinks.
+      let scanFrame = 0;
+      const scheduleScan = () => {
+        if (!scanFrame) {
+          scanFrame = requestAnimationFrame(() => {
+            scanFrame = 0;
+            scan();
+          });
+        }
+      };
+      const mutations = new MutationObserver(scheduleScan);
       mutations.observe(document.body, { childList: true, subtree: true });
 
       cleanups.push(() => {
+        cancelAnimationFrame(scanFrame);
         mutations.disconnect();
         observer.disconnect();
         root.classList.remove('ks-reveal-ready');

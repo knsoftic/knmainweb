@@ -105,7 +105,7 @@ export function SiteShell({ children, initialSettings = null, services = [], log
           <Link href="/" className="ks-logo" onClick={closeMenu} aria-label={`${siteName} home`}>
             {logoUrl ? (
               <img
-                {...optimizedImage(resolveImageUrl(logoUrl), '200px', [384, 640])}
+                {...optimizedImage(resolveImageUrl(logoUrl), '181px', [256, 384, 640])}
                 {...(logoSize ? { width: logoSize.width, height: logoSize.height } : {})}
                 alt={siteName}
                 fetchPriority="high"

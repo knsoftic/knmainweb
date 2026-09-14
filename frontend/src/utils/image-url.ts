@@ -2,9 +2,10 @@ import { API_BASE } from './api-url';
 
 const BACKEND_URL = (API_BASE || '').replace(/\/api\/?$/, '');
 
-// Widths Next's image optimizer accepts out of the box (imageSizes + deviceSizes). Asking for any
-// other width is rejected with a 400, so this list must only contain values from that set.
-const OPTIMIZER_WIDTHS = [384, 640, 828, 1200, 1920];
+// Widths the image optimizer accepts - imageSizes plus deviceSizes, see next.config.mjs. Asking for
+// any other width is rejected with a 400, so every value here must be in that set. 480 and 750
+// give the browser a close fit for cards on laptops and full-width images on phones.
+const OPTIMIZER_WIDTHS = [384, 480, 640, 750, 828, 1200, 1920];
 
 const optimizerUrl = (src: string, width: number) =>
   `/_next/image?url=${encodeURIComponent(src)}&w=${width}&q=75`;

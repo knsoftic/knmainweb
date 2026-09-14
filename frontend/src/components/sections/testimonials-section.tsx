@@ -68,7 +68,7 @@ export function TestimonialsSection({ testimonials = [] }: { testimonials?: any[
                 {...optimizedImage(
                   resolveImageUrl(current.image_url, '/assets/images/testimonial-author.jpg'),
                   '54px',
-                  [128]
+                  [64, 96, 128]
                 )}
                 // Hidden from screen readers, which read the name beside it; the alt text is for
                 // search engines, which index images by it.

@@ -30,6 +30,10 @@ const nextConfig = {
       ...devImagePatterns,
     ],
     ...(isDev ? { dangerouslyAllowLocalIP: true } : {}),
+    // The defaults plus 480. Cards and the hero display at roughly 370-470px on laptops and
+    // monitors; without a step between 384 and 640 they all rounded up to 640, sending well over
+    // twice the pixels needed. Must stay below the smallest device size (640).
+    imageSizes: [32, 48, 64, 96, 128, 256, 384, 480],
   },
   async headers() {
     // Sent on every page. Deliberately conservative: each one closes a specific hole without

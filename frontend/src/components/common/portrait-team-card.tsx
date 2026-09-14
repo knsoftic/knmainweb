@@ -42,7 +42,9 @@ export async function PortraitTeamCard({ member, index = 0 }: { member: TeamMemb
         {finalImgSrc ? (
           <img
             itemProp="image"
-            {...optimizedImage(finalImgSrc, '(max-width: 700px) 100vw, (max-width: 1100px) 50vw, 25vw')}
+            // Measured: two columns (145px) on a phone, 375-385px to laptops, 451px on a wide monitor.
+            // 375 rather than a round 390 keeps laptops on the exact-fit 384 file instead of 480.
+            {...optimizedImage(finalImgSrc, '(max-width: 700px) calc(50vw - 27px), (max-width: 1799px) 375px, 460px')}
             alt={imgSeo?.alt_text || member.name}
             // The photo's real dimensions, so the declared shape matches the file. The frame's own
             // CSS aspect-ratio decides the layout either way; 4:5 is the fallback if unreadable.
