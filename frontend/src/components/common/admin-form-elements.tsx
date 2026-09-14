@@ -55,12 +55,17 @@ export function AdminButton({ children, onClick, type = "button", variant = "pri
   );
 }
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { apiService } from './../../services/api';
 import { resolveImageUrl } from '../../utils/image-url';
+import { notify } from './admin-feedback';
+
+const REMOVE_RED = '#dc3545';
+const REMOVE_RED_HOVER = '#b02a37';
 
 export function AdminImageUpload({ label, value, onChange }: { label: string, value: string, onChange: (url: string) => void }) {
   const [uploading, setUploading] = useState(false);
+  const fileInput = useRef<HTMLInputElement>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target;
@@ -71,7 +76,7 @@ export function AdminImageUpload({ label, value, onChange }: { label: string, va
         onChange(data.url);
       } catch (err: any) {
         // Show the server's reason (e.g. file too large, unsupported type) when available.
-        alert(err?.message ? `Failed to upload image: ${err.message}` : 'Failed to upload image.');
+        notify(err?.message ? `Failed to upload image: ${err.message}` : 'Failed to upload image.', 'error');
         // Reset so picking the same file again re-triggers onChange.
         input.value = '';
       } finally {
@@ -80,15 +85,59 @@ export function AdminImageUpload({ label, value, onChange }: { label: string, va
     }
   };
 
+  // Clears the field only. Nothing is saved until the form is, so closing without saving brings the
+  // image back; the file itself stays in the media library, since other pages may still use it.
+  const removeImage = () => {
+    onChange('');
+    // Otherwise the picker keeps its last file, and choosing that same file again would do nothing.
+    if (fileInput.current) fileInput.current.value = '';
+  };
+
   return (
     <div style={{ marginBottom: '20px' }}>
       <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 600, color: '#343a40' }}>{label}</label>
       <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
         {value && (
-          <img src={resolveImageUrl(value)} alt="Preview" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #ced4da' }} />
+          <div style={{ position: 'relative', flexShrink: 0 }}>
+            <img src={resolveImageUrl(value)} alt="Preview" style={{ display: 'block', width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #ced4da' }} />
+            <button
+              type="button"
+              onClick={removeImage}
+              disabled={uploading}
+              aria-label={`Remove ${label}`}
+              title="Remove image"
+              style={{
+                position: 'absolute',
+                top: '-9px',
+                right: '-9px',
+                width: '26px',
+                height: '26px',
+                minHeight: 0,
+                padding: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '50%',
+                border: '2px solid #fff',
+                background: REMOVE_RED,
+                color: '#fff',
+                cursor: uploading ? 'not-allowed' : 'pointer',
+                boxShadow: '0 2px 6px rgba(0, 0, 0, 0.25)',
+                transition: 'background-color 0.15s, transform 0.15s',
+              }}
+              onMouseEnter={(e) => { if (!uploading) { e.currentTarget.style.background = REMOVE_RED_HOVER; e.currentTarget.style.transform = 'scale(1.08)'; } }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = REMOVE_RED; e.currentTarget.style.transform = 'none'; }}
+            >
+              {/* Drawn inline rather than from an icon font: the admin theme loads its own older Font
+                  Awesome over the site's, and the two name this icon differently. */}
+              <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false">
+                <path d="M1.5 1.5l7 7M8.5 1.5l-7 7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
         )}
         <div style={{ flex: 1 }}>
-          <input type="file" accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml,image/x-icon,.ico" onChange={handleFileChange} style={{ display: 'block', width: '100%', fontSize: '0.9rem' }} disabled={uploading} />
+          <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml,image/x-icon,.ico" onChange={handleFileChange} style={{ display: 'block', width: '100%', fontSize: '0.9rem' }} disabled={uploading} />
           {uploading && <span style={{ fontSize: '0.85rem', color: '#8D18D0', marginTop: '5px', display: 'block' }}>Uploading...</span>}
         </div>
       </div>
