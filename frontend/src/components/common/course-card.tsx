@@ -22,8 +22,10 @@ export const CourseCard = ({ course }: { course: any }) => {
         <img
           {...optimizedImage(imageSrc, '(max-width: 700px) 100vw, (max-width: 1100px) 50vw, 33vw')}
           alt={course.title}
-          width={1600}
-          height={1000}
+          // Real dimensions are looked up on the server (course.image_size); the frame's CSS
+          // aspect-ratio decides the layout either way, so 16:10 is only a fallback.
+          width={course.image_size?.width ?? 1600}
+          height={course.image_size?.height ?? 1000}
           loading="lazy"
           decoding="async"
         />

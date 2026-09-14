@@ -2,6 +2,7 @@ import { optimizedImage, resolveImageUrl } from '../../utils/image-url';
 import { revealDelay } from '../../utils/reveal';
 import { getImageSeo } from '../../utils/seo';
 import { isRealProfileUrl } from '../../utils/settings';
+import { getImageSize } from '../../utils/image-size';
 
 export interface TeamMember {
   image_url?: string;
@@ -24,7 +25,9 @@ const getInitials = (name?: string) => (name || '')
 export async function PortraitTeamCard({ member, index = 0 }: { member: TeamMember; index?: number }) {
   const imgSrc = member.image_url || member.image || '';
   const finalImgSrc = resolveImageUrl(imgSrc);
-  const imgSeo = imgSrc ? await getImageSeo(imgSrc) : null;
+  const [imgSeo, imgSize] = imgSrc
+    ? await Promise.all([getImageSeo(imgSrc), getImageSize(finalImgSrc)])
+    : [null, null];
   // An unfilled profile field often holds the company homepage or the network's own front page.
   // Hiding those icons is better than sending a visitor in a circle.
   const socials = [
@@ -41,8 +44,10 @@ export async function PortraitTeamCard({ member, index = 0 }: { member: TeamMemb
             itemProp="image"
             {...optimizedImage(finalImgSrc, '(max-width: 700px) 100vw, (max-width: 1100px) 50vw, 25vw')}
             alt={imgSeo?.alt_text || member.name}
-            width={800}
-            height={1000}
+            // The photo's real dimensions, so the declared shape matches the file. The frame's own
+            // CSS aspect-ratio decides the layout either way; 4:5 is the fallback if unreadable.
+            width={imgSize?.width ?? 800}
+            height={imgSize?.height ?? 1000}
             title={imgSeo?.title}
             loading="lazy"
             decoding="async"

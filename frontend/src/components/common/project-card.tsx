@@ -2,14 +2,15 @@ import Link from 'next/link';
 import { optimizedImage, resolveImageUrl } from '../../utils/image-url';
 import { revealDelay } from '../../utils/reveal';
 import { getImageSeo } from '../../utils/seo';
+import { getImageSize } from '../../utils/image-size';
 
 const splitList = (value?: string | null) =>
   String(value || '').split(/[\n,]/).map((item) => item.trim()).filter(Boolean);
 
 /** Card for one project. The whole card opens that project's page. */
 export async function ProjectCard({ project, index = 0, columns = 3 }: { project: any; index?: number; columns?: number }) {
-  const imgSeo = await getImageSeo(project.image_url);
   const imageUrl = project.image_url ? resolveImageUrl(project.image_url) : '';
+  const [imgSeo, imgSize] = await Promise.all([getImageSeo(project.image_url), getImageSize(imageUrl)]);
   const tags = [...splitList(project.technologies), ...splitList(project.features)].slice(0, 3);
   const badge = project.badge || project.label || project.category;
   const owner = String(project.client_name || project.category || 'Project').replace(/^client:\s*/i, '');
@@ -35,8 +36,8 @@ export async function ProjectCard({ project, index = 0, columns = 3 }: { project
             <img
               {...optimizedImage(imageUrl, '(max-width: 700px) 100vw, (max-width: 1100px) 50vw, 25vw')}
               alt={imgSeo.alt_text || project.title}
-              width={1600}
-              height={1000}
+              width={imgSize?.width ?? 1600}
+              height={imgSize?.height ?? 1000}
               title={imgSeo.title}
               loading="lazy"
               decoding="async"

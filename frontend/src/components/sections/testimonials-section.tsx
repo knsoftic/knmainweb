@@ -70,7 +70,9 @@ export function TestimonialsSection({ testimonials = [] }: { testimonials?: any[
                   '54px',
                   [128]
                 )}
-                alt=""
+                // Hidden from screen readers, which read the name beside it; the alt text is for
+                // search engines, which index images by it.
+                alt={current.name ? `Photo of ${current.name}` : 'Client photo'}
                 aria-hidden="true"
                 width={54}
                 height={54}

@@ -1,5 +1,17 @@
 import type { Metadata } from 'next';
 import './globals.css';
+// The site's stylesheets, bundled by the build rather than linked from public/assets. That way
+// they are minified, merged into as few files as possible, and served under a content hash with a
+// year-long cache - where the linked copies were unminified, fetched as four separate
+// render-blocking requests, and sent by the host with no cache lifetime at all.
+// Order matters and is preserved: each later file overrides the ones before it, and ks-design.css
+// must stay last so it wins over the template CSS.
+import '../../public/assets/css/fontawesome.css';
+import '../../public/assets/css/templatemo-scholar.css';
+// The few admin-theme base rules the public pages rely on; the full admin theme loads in app/admin.
+import '../../public/assets/css/site-base.css';
+// Public-site layout and components (ks-* classes).
+import '../../public/assets/css/ks-design.css';
 import { resolveImageUrl } from '../utils/image-url';
 import { apiUrl } from '../utils/api-url';
 import { reachableImage, safeFetch } from '../utils/safe-fetch';
@@ -70,23 +82,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" data-scroll-behavior="smooth">
       <head>
-        {/* Every stylesheet below blocks the first paint, and each extra origin costs a DNS lookup
-            and a TLS handshake before its file even starts downloading. Warming the font origins
-            here overlaps that setup with the HTML download instead of paying for it afterwards.
-            Bootstrap and Bootstrap Icons used to load from a third origin as well; their rules now
-            live in site-base.css and their icons come from the Font Awesome already loaded. */}
+        {/* Each extra origin costs a DNS lookup and a TLS handshake before its file can even start
+            downloading. Warming the font origins here overlaps that setup with the HTML download. */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://fonts.cdnfonts.com" crossOrigin="anonymous" />
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
-        <link rel="stylesheet" href="https://fonts.cdnfonts.com/css/conthrax" />
-        <link rel="stylesheet" href="/assets/css/fontawesome.css" />
-        <link rel="stylesheet" href="/assets/css/templatemo-scholar.css" />
-        {/* The few admin-theme base rules the public pages rely on; the full admin theme loads in app/admin/layout.tsx. */}
-        <link rel="stylesheet" href="/assets/css/site-base.css" />
-        {/* Public-site layout and components (ks-* classes); loads last so it wins over the template CSS. */}
-        <link rel="stylesheet" href="/assets/css/ks-design.css" />
-
+        {/* Conthrax, the headline font. Its @font-face is in ks-design.css; preloading the file here
+            means the browser starts fetching it as soon as it reads the page, instead of only after
+            discovering it inside a stylesheet. */}
+        <link
+          rel="preload"
+          href="https://fonts.cdnfonts.com/s/17842/conthrax-sb.woff"
+          as="font"
+          type="font/woff"
+          crossOrigin="anonymous"
+        />
       </head>
       <body>
         {children}

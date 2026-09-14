@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import { optimizedImage, resolveImageUrl } from '../../utils/image-url';
 import { SplitWords } from '../common/split-words';
+import type { ImageSize } from '../../utils/image-size';
 import { CountUp, type FunFactItem } from './fun-facts';
 
 export interface HeroSlide {
@@ -15,6 +16,8 @@ export interface HeroSlide {
   btn_primary_url: string;
   btn_secondary_text: string;
   btn_secondary_url: string;
+  /** Real pixel dimensions of image_url, looked up on the server when available. */
+  image_size?: ImageSize | null;
 }
 
 const DEFAULT_SLIDE: HeroSlide = {
@@ -47,6 +50,10 @@ type HeroSliderProps = {
   /** Service / course names scrolling along the bottom of the hero. */
   marquee?: string[];
 };
+
+function HeroHeading({ as: Tag, className, children }: { as: 'h1' | 'h2'; className: string; children: React.ReactNode }) {
+  return <Tag className={className}>{children}</Tag>;
+}
 
 export function HeroSlider({ slides, stats = [], marquee = [] }: HeroSliderProps) {
   const activeSlides = slides && slides.length > 0 ? slides : [DEFAULT_SLIDE];
@@ -119,18 +126,22 @@ export function HeroSlider({ slides, stats = [], marquee = [] }: HeroSliderProps
                 aria-label={count > 1 ? `${index + 1} of ${count}` : undefined}
               >
                 <div className="ks-hero__copy">
-                  {slide.badge_text && (
-                    <span className="ks-badge">
-                      <span className="ks-badge__dot" aria-hidden="true"></span> {slide.badge_text}
-                    </span>
-                  )}
-                  {index === 0 ? (
-                    // The first slide carries the page's H1: search engines and screen readers
-                    // should see the same headline a visitor does.
-                    <h1 className="ks-display ks-hero__title"><SplitWords text={slide.title} /></h1>
-                  ) : (
-                    <h2 className="ks-display ks-hero__title"><SplitWords text={slide.title} /></h2>
-                  )}
+                  {/* The badge and the headline form one heading. The first slide's is the page's H1,
+                      so it carries what the site actually is ("Software House & IT Institute") as
+                      well as the slogan - the terms people search for - using only text a visitor
+                      already sees. The wrapper adds no styling, so both look exactly as before. */}
+                  <HeroHeading className="ks-hero__heading" as={index === 0 ? 'h1' : 'h2'}>
+                    {slide.badge_text && (
+                      <>
+                        <span className="ks-badge">
+                          <span className="ks-badge__dot" aria-hidden="true"></span> {slide.badge_text}
+                        </span>
+                        {/* Keeps a screen reader from running the two phrases together. */}
+                        <span className="ks-visually-hidden"> - </span>
+                      </>
+                    )}
+                    <span className="ks-display ks-hero__title"><SplitWords text={slide.title} /></span>
+                  </HeroHeading>
                   {slide.description && <p className="ks-hero__desc">{slide.description}</p>}
                   <div className="ks-hero__actions">
                     {slide.btn_primary_text && (
@@ -159,6 +170,9 @@ export function HeroSlider({ slides, stats = [], marquee = [] }: HeroSliderProps
                         [384, 640, 828, 1200]
                       )}
                       alt={slide.title}
+                      // The slide's real dimensions (looked up on the server), so the stage keeps its
+                      // shape while the picture loads instead of growing when it lands.
+                      {...(slide.image_size ? { width: slide.image_size.width, height: slide.image_size.height } : {})}
                       className="ks-hero__image"
                       fetchPriority={index === 0 ? 'high' : undefined}
                       loading={index === 0 ? 'eager' : 'lazy'}

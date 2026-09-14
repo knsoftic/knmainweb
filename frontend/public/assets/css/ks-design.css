@@ -6,6 +6,22 @@
    Every class is prefixed `ks-` so nothing collides with the template CSS.
    ========================================================================== */
 
+/* Conthrax, the display face used for every page title - including the hero headline, which is
+   the largest thing on the homepage and what "Largest Contentful Paint" measures.
+
+   It used to arrive through fonts.cdnfonts.com's stylesheet, which declares no font-display, so
+   the headline stayed invisible until that stylesheet had downloaded from a third party and then
+   the font had downloaded after it. Declaring the same face here removes the stylesheet hop, the
+   font file itself is preloaded in app/layout.tsx, and `swap` shows the headline straight away.
+   The source, weight and style are exactly what cdnfonts declared, so it renders the same. */
+@font-face {
+  font-family: 'Conthrax';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: local('Conthrax'), url('https://fonts.cdnfonts.com/s/17842/conthrax-sb.woff') format('woff');
+}
+
 :root {
   /* Brand (existing values) */
   --ks-purple: #8D18D0;
@@ -429,11 +445,10 @@
 }
 .ks-logo { display: inline-flex; align-items: center; flex-shrink: 0; text-decoration: none !important; transition: transform 0.4s var(--ks-ease); }
 .ks-logo:hover { transform: scale(1.03); }
-/* The width is only known once the file arrives, so without a ratio the header re-flows the
-   moment the logo loads - one of the larger layout shifts on the site. Stating the shape of
-   the logo lets the browser reserve the right width up front. Update this if the logo in
-   Admin → Settings is replaced with one of a noticeably different shape. */
-.ks-logo img { height: 56px; width: auto; aspect-ratio: 1600 / 584; object-fit: contain; transition: height 0.35s var(--ks-ease); }
+/* The logo's real width and height are read from the file and set on the <img> (see
+   app/(site)/layout.tsx), so the browser reserves exactly the right space before it arrives and
+   the header never re-flows when it loads - whatever shape of logo is uploaded. */
+.ks-logo img { height: 56px; width: auto; object-fit: contain; transition: height 0.35s var(--ks-ease); }
 .ks-header.is-scrolled .ks-logo img { height: 46px; }
 .ks-logo__text { display: flex; flex-direction: column; line-height: 1.05; color: #fff; }
 .ks-logo__name { font-family: var(--ks-font-display); font-size: 1.4rem; font-weight: 700; white-space: nowrap; }
@@ -1610,7 +1625,11 @@ select.ks-input { appearance: auto; }
   padding: 56px 0;
 }
 .ks-footer__logo { display: inline-block; }
-.ks-footer__logo img { display: block; width: 200px; height: auto; aspect-ratio: 1600 / 584; object-fit: contain; }
+.ks-footer__logo img { display: block; width: 200px; height: auto; object-fit: contain; }
+/* Only if the size could not be read (the media server was unreachable when the page was built):
+   assume the usual wide wordmark rather than reserving no space at all. */
+.ks-logo img:not([width]),
+.ks-footer__logo img:not([width]) { aspect-ratio: 16 / 5; }
 .ks-footer__logo-text { font-family: var(--ks-font-display); font-size: 1.5rem; font-weight: 700; color: #fff; }
 .ks-footer__desc { margin: 18px 0 24px; font-size: 0.92rem; line-height: 1.75; max-width: 340px; color: rgba(255, 255, 255, 0.65); }
 .ks-footer__heading { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #fff; margin: 6px 0 20px; }
@@ -2548,3 +2567,21 @@ html.ks-reveal-ready [data-reveal='stagger']:not([data-revealed]):not([data-reve
 .contact-social-pill-youtube i { color: #ff0000 !important; }
 .contact-social-pill-tiktok i { color: #010101 !important; }
 .contact-social-pill-github i { color: #181717 !important; }
+
+/* ------------------------------------------------------------------------ Hero heading */
+
+/* The badge and headline share one heading element (see hero-slider.tsx) so the H1 names the
+   site's subject as well as its slogan. The base stylesheets style every h1 and h2 - margins,
+   weight, line-height, a dark heading colour - so all of that is neutralised here: the wrapper
+   inherits everything from the copy column exactly as the two separate elements did. */
+.ks-hero__heading {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+}
+/* Was a block-level heading of its own; a span needs telling to keep its margins and full line. */
+.ks-hero__heading .ks-hero__title { display: block; }

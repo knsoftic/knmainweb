@@ -9,6 +9,7 @@ import { apiUrl } from '../../../utils/api-url';
 import { generatePageMetadata } from '../../../utils/seo';
 import { revealDelay } from '../../../utils/reveal';
 import { resolveImageUrl } from '../../../utils/image-url';
+import { getImageSize } from '../../../utils/image-size';
 import { SITE_NAME, SITE_URL } from '../../../utils/site';
 
 export async function generateMetadata() {
@@ -29,9 +30,14 @@ export default async function CoursesPage() {
     safeFetch(apiUrl('/seo/pages/courses'), null),
     safeFetch(apiUrl('/fun_facts'), []),
   ]);
-  const courses = (Array.isArray(data) ? data : [])
+  const activeCourses = (Array.isArray(data) ? data : [])
     .filter((c: any) => c.is_active)
     .sort((a: any, b: any) => (Number(a.display_order) || 0) - (Number(b.display_order) || 0));
+  // Each card's real image dimensions, so the declared shape matches the uploaded file.
+  const courses = await Promise.all(activeCourses.map(async (course: any) => ({
+    ...course,
+    image_size: await getImageSize(resolveImageUrl(course.image_url)),
+  })));
 
   // Same number as the homepage "students" counter (Admin → Homepage → Fun Facts), so the two never disagree.
   const studentsFact = (Array.isArray(facts) ? facts : []).find((fact: any) => fact.id === 'students');

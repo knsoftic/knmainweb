@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { getPrimaryPhone, getRealSocialLinks, getSetting } from '../../utils/settings';
-import { resolveImageUrl } from '../../utils/image-url';
+import { optimizedImage, resolveImageUrl } from '../../utils/image-url';
+import type { ImageSize } from '../../utils/image-size';
 import { getWhatsappNumber } from './site-settings';
 import { serviceAnchor } from '../../utils/site';
 
@@ -41,7 +42,7 @@ const buildServiceLinks = (services: any[]) => {
   ];
 };
 
-export function SiteFooter({ settings, services = [] }: { settings?: any; services?: any[] }) {
+export function SiteFooter({ settings, services = [], logoSize = null }: { settings?: any; services?: any[]; logoSize?: ImageSize | null }) {
   const serviceLinks = buildServiceLinks(services);
   // Only profiles that really exist: an icon linking to linkedin.com's front page wastes a click.
   const socialLinks = getRealSocialLinks(settings);
@@ -79,7 +80,13 @@ export function SiteFooter({ settings, services = [] }: { settings?: any; servic
           <div>
             <Link href="/" className="ks-footer__logo" aria-label={`${companyName} home`}>
               {logoUrl ? (
-                <img src={resolveImageUrl(logoUrl)} alt={companyName} />
+                <img
+                  {...optimizedImage(resolveImageUrl(logoUrl), '200px', [384, 640])}
+                  {...(logoSize ? { width: logoSize.width, height: logoSize.height } : {})}
+                  alt={companyName}
+                  loading="lazy"
+                  decoding="async"
+                />
               ) : (
                 <span className="ks-footer__logo-text">{companyName}</span>
               )}

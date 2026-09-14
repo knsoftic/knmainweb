@@ -6,7 +6,8 @@ import { usePathname } from 'next/navigation';
 import { SiteFooter } from './site-footer';
 import { MotionEffects } from './motion-effects';
 import { ContactWidget } from '../sections/contact-widget';
-import { resolveImageUrl } from '../../utils/image-url';
+import { optimizedImage, resolveImageUrl } from '../../utils/image-url';
+import type { ImageSize } from '../../utils/image-size';
 import { SiteSettingsProvider, getWhatsappNumber } from './site-settings';
 
 type SiteShellProps = {
@@ -14,6 +15,7 @@ type SiteShellProps = {
   /** Settings loaded on the server by the (site) layout; null if the API failed. */
   initialSettings?: any;
   services?: any[];
+  logoSize?: ImageSize | null;
 };
 
 const navItems = [
@@ -26,7 +28,7 @@ const navItems = [
   { label: 'Contact', href: '/contact' },
 ];
 
-export function SiteShell({ children, initialSettings = null, services = [] }: SiteShellProps) {
+export function SiteShell({ children, initialSettings = null, services = [], logoSize = null }: SiteShellProps) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -102,7 +104,12 @@ export function SiteShell({ children, initialSettings = null, services = [] }: S
         <div className="ks-container ks-header__bar">
           <Link href="/" className="ks-logo" onClick={closeMenu} aria-label={`${siteName} home`}>
             {logoUrl ? (
-              <img src={resolveImageUrl(logoUrl)} alt={siteName} />
+              <img
+                {...optimizedImage(resolveImageUrl(logoUrl), '200px', [384, 640])}
+                {...(logoSize ? { width: logoSize.width, height: logoSize.height } : {})}
+                alt={siteName}
+                fetchPriority="high"
+              />
             ) : (
               <span className="ks-logo__text">
                 <span className="ks-logo__name">{siteName}</span>
@@ -173,7 +180,7 @@ export function SiteShell({ children, initialSettings = null, services = [] }: S
 
       {pathname !== '/contact' && <ContactWidget />}
 
-      <SiteFooter settings={settings} services={services} />
+      <SiteFooter settings={settings} services={services} logoSize={logoSize} />
 
       <a
         href={`https://wa.me/${getWhatsappNumber(settings)}?text=Hello!%20I%20visited%20your%20website%20and%20want%20to%20inquire%20about%20your%20services.`}

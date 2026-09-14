@@ -10,6 +10,7 @@ import { ServiceExplorer } from '../../components/sections/service-explorer';
 import { PageSchema } from '../../components/seo/json-ld';
 import { safeFetch } from '../../utils/safe-fetch';
 import { optimizedImage, resolveImageUrl } from '../../utils/image-url';
+import { getImageSize } from '../../utils/image-size';
 import { apiUrl } from '../../utils/api-url';
 import { generatePageMetadata } from '../../utils/seo';
 import { revealDelay } from '../../utils/reveal';
@@ -42,9 +43,12 @@ export default async function HomePage() {
     safeFetch(apiUrl('/seo/pages/home?_source=home'), null),
   ]);
 
-  const heroSlides = sortByOrder(asList(heroData).filter((s: any) => s.is_active));
+  // Each uploaded picture's real dimensions, so the space for it is reserved before it arrives.
+  const withImageSize = (items: any[]) =>
+    Promise.all(items.map(async (item: any) => ({ ...item, image_size: await getImageSize(resolveImageUrl(item.image_url)) })));
+  const heroSlides = await withImageSize(sortByOrder(asList(heroData).filter((s: any) => s.is_active)));
   const funFacts = sortByOrder(asList(factsData));
-  const homepageCards = sortByOrder(asList(cardsData).filter((c: any) => c.is_active)).slice(0, 3);
+  const homepageCards = await withImageSize(sortByOrder(asList(cardsData).filter((c: any) => c.is_active)).slice(0, 3));
 
   // Featured services/courses come with the order chosen in Admin → Homepage.
   const services = sortByOrder(asList(servicesData).filter((s: any) => s.is_active), 'homepage_order');
@@ -52,11 +56,12 @@ export default async function HomePage() {
   const teamMembers = sortByOrder(asList(teamMembersData).filter((t: any) => t.is_active));
   const testimonials = asList(testimonialsData).filter((t: any) => t.is_approved);
 
-  const courseCards = courses.map((c: any) => ({
+  const courseCards = await Promise.all(courses.map(async (c: any) => ({
     ...c,
     image: resolveImageUrl(c.image_url, '/assets/images/cover-object.png'),
+    image_size: await getImageSize(resolveImageUrl(c.image_url)),
     enrollUrl: c.enroll_url,
-  }));
+  })));
 
   const formattedTeam = teamMembers.map((m: any) => ({
     ...m,
@@ -96,7 +101,10 @@ export default async function HomePage() {
                     <span className="ks-icon-tile ks-icon-tile--lg ks-icon-tile--grad" aria-hidden="true">
                       <img
                         {...optimizedImage(resolveImageUrl(card.image_url, '/assets/images/service-01.png'), '64px', [128])}
-                        alt=""
+                        // Its container is aria-hidden, so screen readers still skip it (the title
+                        // sits right below); the text is for image search, which ignores that.
+                        alt={`${card.title} icon`}
+                        {...(card.image_size ? { width: card.image_size.width, height: card.image_size.height } : {})}
                         loading="lazy"
                         decoding="async"
                       />
