@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 import './globals.css';
-// The site's stylesheets, bundled by the build rather than linked from public/assets. That way
-// they are minified, merged into as few files as possible, and served under a content hash with a
-// year-long cache - where the linked copies were unminified, fetched as four separate
-// render-blocking requests, and sent by the host with no cache lifetime at all.
+// The site's stylesheets, bundled by the build rather than linked from public/assets, so they are
+// minified and served under a content hash with a year-long cache. The build merges small files
+// and keeps any over 100 KB separate by design, which is why Font Awesome and ks-design.css arrive
+// as their own requests; they download in parallel.
 // Order matters and is preserved: each later file overrides the ones before it, and ks-design.css
 // must stay last so it wins over the template CSS.
 import '../../public/assets/css/fontawesome.css';

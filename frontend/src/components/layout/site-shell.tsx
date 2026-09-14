@@ -52,9 +52,18 @@ export function SiteShell({ children, initialSettings = null, services = [], log
         lastScrollY.current = y;
       }
     };
-    onScroll();
+    // The page may already be scrolled when it loads (a reload part-way down, a link to #section),
+    // so the header needs one initial check. Doing it here, straight after React attaches to the page,
+    // made reading scrollY force the browser to lay out the whole page early - measured at 48 ms. Two
+    // frames later that layout has already happened, so the same read costs nothing.
+    let initialCheck = requestAnimationFrame(() => {
+      initialCheck = requestAnimationFrame(onScroll);
+    });
     window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    return () => {
+      cancelAnimationFrame(initialCheck);
+      window.removeEventListener('scroll', onScroll);
+    };
   }, []);
 
   // Glides the soft highlight behind the hovered nav link.
