@@ -1,6 +1,6 @@
 "use client";
 
-import Link from 'next/link';
+import { IntentLink } from '../common/intent-link';
 import { getPrimaryPhone, getRealSocialLinks, getSetting } from '../../utils/settings';
 import { optimizedImage, resolveImageUrl } from '../../utils/image-url';
 import type { ImageSize } from '../../utils/image-size';
@@ -62,9 +62,9 @@ export function SiteFooter({ settings, services = [], logoSize = null }: { setti
             <h2 className="ks-footer__cta-title">Have a project in mind or want to learn a new skill?</h2>
           </div>
           <div className="ks-footer__cta-actions">
-            <Link href="/contact" className="ks-btn ks-btn--light">
+            <IntentLink href="/contact" className="ks-btn ks-btn--light">
               Start a Project <i className="fa fa-arrow-right" aria-hidden="true"></i>
-            </Link>
+            </IntentLink>
             <a
               href={`https://wa.me/${getWhatsappNumber(settings)}`}
               target="_blank"
@@ -78,7 +78,7 @@ export function SiteFooter({ settings, services = [], logoSize = null }: { setti
 
         <div className="ks-footer__grid" data-reveal="stagger">
           <div>
-            <Link href="/" className="ks-footer__logo" aria-label={`${companyName} home`}>
+            <IntentLink href="/" className="ks-footer__logo" aria-label={`${companyName} home`}>
               {logoUrl ? (
                 <img
                   {...optimizedImage(resolveImageUrl(logoUrl), '200px', [256, 384, 640])}
@@ -90,7 +90,7 @@ export function SiteFooter({ settings, services = [], logoSize = null }: { setti
               ) : (
                 <span className="ks-footer__logo-text">{companyName}</span>
               )}
-            </Link>
+            </IntentLink>
             <p className="ks-footer__desc">
               {tagline}. We bring your digital visions to life through cutting-edge development and striking visual identity.
             </p>
@@ -116,7 +116,7 @@ export function SiteFooter({ settings, services = [], logoSize = null }: { setti
             <h3 className="ks-footer__heading">Quick Links</h3>
             <ul className="ks-footer__links">
               {quickLinks.map((link) => (
-                <li key={link.label}><Link href={link.href}>{link.label}</Link></li>
+                <li key={link.label}><IntentLink href={link.href}>{link.label}</IntentLink></li>
               ))}
             </ul>
           </div>
@@ -125,7 +125,7 @@ export function SiteFooter({ settings, services = [], logoSize = null }: { setti
             <h3 className="ks-footer__heading">Our Services</h3>
             <ul className="ks-footer__links">
               {serviceLinks.map((link) => (
-                <li key={link.label}><Link href={link.href}>{link.label}</Link></li>
+                <li key={link.label}><IntentLink href={link.href}>{link.label}</IntentLink></li>
               ))}
             </ul>
           </div>
@@ -152,7 +152,7 @@ export function SiteFooter({ settings, services = [], logoSize = null }: { setti
         <div className="ks-footer__bottom">
           <span>{getSetting(settings, ['copyright_text'], `© ${new Date().getFullYear()} ${companyName}. All rights reserved.`)}</span>
           <span>
-            <Link href="/about">About</Link> · <Link href="/blog">Blog</Link> · <Link href="/contact">Contact</Link>
+            <IntentLink href="/about">About</IntentLink> · <IntentLink href="/blog">Blog</IntentLink> · <IntentLink href="/contact">Contact</IntentLink>
           </span>
         </div>
       </div>

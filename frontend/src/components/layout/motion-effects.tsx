@@ -7,8 +7,8 @@ const REVEAL_PENDING = '[data-reveal]:not([data-revealed]):not([data-reveal-done
 /**
  * Site-wide motion, mounted once by SiteShell (renders nothing):
  * - Scroll reveal: elements with `data-reveal` animate in the first time they scroll into view.
- *   Anything already on screen when it is found is left as it is, and content is only hidden
- *   after this has run, so pages never flicker and stay readable without JavaScript.
+ *   Anything already on screen when it is found is left as it is, and only elements confirmed to
+ *   be below the fold are hidden, so pages never flicker and stay readable without JavaScript.
  *   New content (route changes, filters) is picked up automatically.
  * - Card glow: `.ks-card--hover` cards get the pointer position as --mx / --my.
  * Both are skipped for visitors who prefer reduced motion.
@@ -32,28 +32,27 @@ export function MotionEffects() {
         { rootMargin: '0px 0px -8% 0px' }
       );
 
-      const scan = () => {
-        const pending = Array.from(document.querySelectorAll<HTMLElement>(REVEAL_PENDING));
-        if (!pending.length) return;
-
-        // Every position is read first and every attribute written afterwards. Alternating the two
-        // made the browser recalculate styles once per element - each attribute below changes
-        // which CSS rules apply, and the next position read has to wait for that to be worked out.
-        // The attributes only affect opacity, so no position can differ between the two orders.
-        const limit = window.innerHeight * 0.92;
-        const onScreen = pending.map((element) => {
-          const rect = element.getBoundingClientRect();
-          return rect.top < limit && rect.bottom > 0;
-        });
-
-        pending.forEach((element, index) => {
-          if (onScreen[index]) {
+      // Sorts each new element once: already on screen (done, never hidden) or below the fold
+      // (watched, hidden by CSS until it scrolls into view). Reading element positions directly
+      // forced the browser to lay out the page early - Lighthouse flagged 119 ms of it on the
+      // homepage. An observer gets the same answer from the layout the browser does anyway, and
+      // until it answers the element simply stays visible.
+      const classifier = new IntersectionObserver((entries) => {
+        for (const entry of entries) {
+          const element = entry.target;
+          classifier.unobserve(element);
+          if (element.hasAttribute('data-revealed') || element.hasAttribute('data-reveal-done') || element.hasAttribute('data-reveal-watch')) continue;
+          if (entry.isIntersecting) {
             element.setAttribute('data-reveal-done', '');
           } else {
             element.setAttribute('data-reveal-watch', '');
             observer.observe(element);
           }
-        });
+        }
+      });
+
+      const scan = () => {
+        document.querySelectorAll<HTMLElement>(REVEAL_PENDING).forEach((element) => classifier.observe(element));
       };
 
       scan();
@@ -61,8 +60,7 @@ export function MotionEffects() {
 
       // React can insert many nodes in one go (hydration, a route change, a filter), and each
       // insertion is its own mutation. Coalescing them into one scan per frame avoids querying the
-      // whole page dozens of times; the frame callback still runs before the browser paints, so
-      // fresh on-screen content never blinks.
+      // whole page dozens of times.
       let scanFrame = 0;
       const scheduleScan = () => {
         if (!scanFrame) {
@@ -78,6 +76,7 @@ export function MotionEffects() {
       cleanups.push(() => {
         cancelAnimationFrame(scanFrame);
         mutations.disconnect();
+        classifier.disconnect();
         observer.disconnect();
         root.classList.remove('ks-reveal-ready');
         document.querySelectorAll('[data-reveal-watch]:not([data-revealed])').forEach((element) => element.removeAttribute('data-reveal-watch'));

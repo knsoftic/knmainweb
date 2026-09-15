@@ -1,6 +1,6 @@
 "use client";
 
-import Link from 'next/link';
+import { IntentLink } from '../common/intent-link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { SiteFooter } from './site-footer';
@@ -41,8 +41,7 @@ export function SiteShell({ children, initialSettings = null, services = [], log
   const siteName = settings?.site_name || 'KN Softic';
 
   useEffect(() => {
-    const onScroll = () => {
-      const y = window.scrollY;
+    const update = (y: number) => {
       setScrolled(y > 40);
       setShowTop(y > 300);
       // Hide the header while scrolling down past the hero, bring it back on any scroll up.
@@ -52,16 +51,21 @@ export function SiteShell({ children, initialSettings = null, services = [], log
         lastScrollY.current = y;
       }
     };
+    const onScroll = () => update(window.scrollY);
     // The page may already be scrolled when it loads (a reload part-way down, a link to #section),
-    // so the header needs one initial check. Doing it here, straight after React attaches to the page,
-    // made reading scrollY force the browser to lay out the whole page early - measured at 48 ms. Two
-    // frames later that layout has already happened, so the same read costs nothing.
-    let initialCheck = requestAnimationFrame(() => {
-      initialCheck = requestAnimationFrame(onScroll);
+    // so the header needs one initial check. Reading scrollY for it made the browser work out styles
+    // and layout early, whenever something else on the page had just changed - 48 ms straight after
+    // React attached, still 14 ms two frames later. An observer on the page itself reports the same
+    // offset from the layout the browser does anyway: the page's top edge sits scrollY above the
+    // viewport.
+    const initialCheck = new IntersectionObserver(([entry]) => {
+      initialCheck.disconnect();
+      update(-entry.boundingClientRect.top);
     });
+    initialCheck.observe(document.documentElement);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => {
-      cancelAnimationFrame(initialCheck);
+      initialCheck.disconnect();
       window.removeEventListener('scroll', onScroll);
     };
   }, []);
@@ -111,7 +115,7 @@ export function SiteShell({ children, initialSettings = null, services = [], log
       <span className="ks-scroll-progress" aria-hidden="true"></span>
       <header className={`ks-header${scrolled || menuOpen ? ' is-scrolled' : ''}${headerHidden && !menuOpen ? ' is-hidden' : ''}`}>
         <div className="ks-container ks-header__bar">
-          <Link href="/" className="ks-logo" onClick={closeMenu} aria-label={`${siteName} home`}>
+          <IntentLink href="/" className="ks-logo" onClick={closeMenu} aria-label={`${siteName} home`}>
             {logoUrl ? (
               <img
                 {...optimizedImage(resolveImageUrl(logoUrl), '181px', [256, 384, 640])}
@@ -125,14 +129,14 @@ export function SiteShell({ children, initialSettings = null, services = [], log
                 <span className="ks-logo__tag">{settings?.website_tagline || 'Software House & IT Institute'}</span>
               </span>
             )}
-          </Link>
+          </IntentLink>
 
           <nav aria-label="Main">
             <ul className="ks-nav" onMouseLeave={hideNavPill}>
               <li className="ks-nav__pill" ref={navPill} aria-hidden="true"></li>
               {navItems.map((item) => (
                 <li key={item.label}>
-                  <Link
+                  <IntentLink
                     href={item.href}
                     className={isActive(item.href) ? 'is-active' : undefined}
                     aria-current={isActive(item.href) ? 'page' : undefined}
@@ -141,16 +145,16 @@ export function SiteShell({ children, initialSettings = null, services = [], log
                     onBlur={hideNavPill}
                   >
                     {item.label}
-                  </Link>
+                  </IntentLink>
                 </li>
               ))}
             </ul>
           </nav>
 
           <div className="ks-header__actions">
-            <Link href="/contact" className="ks-btn ks-btn--light ks-header__cta">
+            <IntentLink href="/contact" className="ks-btn ks-btn--light ks-header__cta">
               Get a Quote <i className="fa fa-arrow-right" aria-hidden="true"></i>
-            </Link>
+            </IntentLink>
             <button
               type="button"
               className="ks-burger"
@@ -168,20 +172,20 @@ export function SiteShell({ children, initialSettings = null, services = [], log
           <ul>
             {navItems.map((item) => (
               <li key={item.label}>
-                <Link
+                <IntentLink
                   href={item.href}
                   className={`ks-mobile-link${isActive(item.href) ? ' is-active' : ''}`}
                   onClick={closeMenu}
                   tabIndex={menuOpen ? undefined : -1}
                 >
                   {item.label}
-                </Link>
+                </IntentLink>
               </li>
             ))}
           </ul>
-          <Link href="/contact" className="ks-btn ks-btn--primary ks-btn--block" onClick={closeMenu} tabIndex={menuOpen ? undefined : -1}>
+          <IntentLink href="/contact" className="ks-btn ks-btn--primary ks-btn--block" onClick={closeMenu} tabIndex={menuOpen ? undefined : -1}>
             Get a Quote <i className="fa fa-arrow-right" aria-hidden="true"></i>
-          </Link>
+          </IntentLink>
         </div>
       </header>
 
