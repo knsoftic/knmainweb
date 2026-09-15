@@ -75,7 +75,7 @@ export default function CommentForm({ postId }: CommentFormProps) {
     width: '100%',
     outline: 'none',
     transition: 'all 0.25s ease',
-    fontFamily: 'Inter, sans-serif',
+    fontFamily: "Inter, 'Inter Fallback', sans-serif",
   };
 
   return (
@@ -219,7 +219,7 @@ export default function CommentForm({ postId }: CommentFormProps) {
               gap: '8px',
               boxShadow: '0 8px 22px rgba(122,106,216,0.3)',
               transition: 'all 0.3s ease',
-              fontFamily: 'Inter, sans-serif',
+              fontFamily: "Inter, 'Inter Fallback', sans-serif",
             }}
           >
             {submitting ? (

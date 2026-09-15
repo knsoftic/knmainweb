@@ -135,7 +135,7 @@ html {
 html,
 body {
   /* font-family: 'Poppins', sans-serif; */
-  font-family: 'Inter', sans-serif !important;
+  font-family: 'Inter', 'Inter Fallback', sans-serif !important;
   -ms-text-size-adjust: 100%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -186,7 +186,7 @@ Global Styles
 
 html,
 body {
-  font-family: 'Inter', sans-serif !important;
+  font-family: 'Inter', 'Inter Fallback', sans-serif !important;
 }
 
 ::selection {

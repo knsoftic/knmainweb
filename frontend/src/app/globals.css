@@ -13,7 +13,7 @@ html {
 body {
   margin: 0;
   /* Inter is the face the site loads; Poppins is never loaded. */
-  font-family: 'Inter', sans-serif !important;
+  font-family: 'Inter', 'Inter Fallback', sans-serif !important;
   background: #ffffff;
   color: #1e1e1e;
   overflow-x: hidden;
@@ -71,7 +71,7 @@ textarea {
   padding: 72px 0 0;
   position: relative;
   overflow: hidden;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', 'Inter Fallback', sans-serif;
   border-top: none;
 }
 
